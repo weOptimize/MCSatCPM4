@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 from scipy import stats as st
 from copulas.multivariate import GaussianMultivariate
 from scipy.stats import rv_continuous, rv_histogram, norm, uniform, multivariate_normal, beta
+from deap import base, creator, tools, algorithms
 
 
 from fitter import Fitter, get_common_distributions, get_distributions
@@ -55,6 +56,13 @@ def portfolio_npv(portfolio):
             npv_portfolio += npv(wacc, cashflows[i])
     return npv_portfolio
 
+#defining the function that stores in an array the net present value of each candidate project
+def npvperproject_calculator(wacc, cashflows):
+    npvperproject = []
+    for i in range(nrcandidates):
+        npvperproject.append(npv(wacc, cashflows[i]))
+    return npvperproject
+
 #defining the function that calculates the total budget of a portfolio of projects
 def portfolio_totalbudget(portfolio):
     totalbudget_portfolio = 0
@@ -63,142 +71,82 @@ def portfolio_totalbudget(portfolio):
             totalbudget_portfolio += bdgtperproject[i]
     return totalbudget_portfolio
 
-#defining the function that maximizes the net present value of a portfolio of projects, while respecting the budget constraint
-def maximize_npv():
-    best_of_best = [0] * nrcandidates
-    exit_iter = 25
-    for i in range(5):
-        print(i)
-        tested_portfolios = set()
-        best_portfolio = [0] * nrcandidates
-        best_npv = 0
-        best_budget = 0
-        #exit_iter = 10
-        no_update_iter = 0
-        #loop to find reasonable suboptimals
-        print("****************new policy iteration****************")
-        while no_update_iter < exit_iter:
-            no_update_iter += 1
-            new_portfolio = generate_new_portfolio(best_portfolio)
-            new_npv = portfolio_npv(new_portfolio)
-            new_budget = portfolio_totalbudget(new_portfolio)
-            portfolio_key = tuple(new_portfolio)
-            # in case the portfolio has already been tested, skip it
-            if portfolio_key in tested_portfolios:
-                continue
-            tested_portfolios.add(portfolio_key)
-            if new_npv > best_npv and new_budget <= maxbdgt:
-                best_portfolio = new_portfolio
-                best_npv = new_npv
-                best_budget = new_budget
-                no_update_iter = 0
-                #print("new best portfolio L1: %s, npv: %s, budget: %s" % (best_portfolio, best_npv, best_budget))
-        # validation whether there is a better portfolio with one more project
-        # increase the amount of projects in the portfolio by one
-        no_update_iter = 0
-        while no_update_iter < exit_iter:
-            no_update_iter += 1
-            new_portfolio = best_portfolio.copy()
-            i = 0
-            while new_portfolio[i] == 1:
-                i=i+1
-            new_portfolio[i] = 1
-            new_portfolio = shake_portfolio(new_portfolio)
-            new_npv = portfolio_npv(new_portfolio)
-            new_budget = portfolio_totalbudget(new_portfolio)
-            portfolio_key = tuple(new_portfolio)
-            # in case the portfolio has already been tested, skip it
-            if portfolio_key in tested_portfolios:
-                continue
-            tested_portfolios.add(portfolio_key)
-            if new_npv > best_npv and new_budget <= maxbdgt:
-                best_portfolio = new_portfolio
-                best_npv = new_npv
-                best_budget = new_budget
-                print("new best portfolio L2: %s, npv: %s, budget: %s" % (best_portfolio, best_npv, best_budget))
-        # if the best portfolio is better than the best of best, update the best of best
-        if best_npv > portfolio_npv(best_of_best):
-            best_of_best = best_portfolio.copy()
-            best_of_best_npv = best_npv
-            best_of_best_budget = best_budget
-            print("new BoB portfolio L3: %s, npv: %s, budget: %s" % (best_of_best, best_of_best_npv, best_of_best_budget))
-    return best_of_best, round(best_of_best_npv), round(best_of_best_budget)
-
-def generate_new_portfolio(current_portfolio):
-    #print("executing_generate_new_portfolio")
-    npv_ordered_portfolios2 = []
-    not_included_projects = []
-    new_portfolio = current_portfolio.copy()
-    # store in a list the projects that are not included in the current portfolio
+# Defining the fitness function
+def evaluate(individual):
+    total_cost = 0
+    total_npv = 0
     for i in range(nrcandidates):
-        if current_portfolio[i] == 0:
-            not_included_projects.append(i)
-    # Generate 5 random FEASIBLE portfolios through a while loop
-    i=0
-    while len(npv_ordered_portfolios2) < 5:
-    #take randomly one of the projects that are not included in the best portfolio
-        j = random.choice(not_included_projects)
-        new_portfolio[j] = 1
-        # Calculate the NPV of the resulting portfolio
-        npv_portfolio = portfolio_npv(new_portfolio)
-        new_budget = portfolio_totalbudget(new_portfolio)
-        if npv_portfolio > portfolio_npv(current_portfolio) and new_budget <= maxbdgt:
-            npv_ordered_portfolios2.append((new_portfolio.copy(), npv_portfolio))
-            new_portfolio[j] = 0
-        else:
-            i += 1
-        if i>10:
-            return shake_portfolio(current_portfolio)
-        new_portfolio[j] = 0
+        if individual[i] == 1:
+            total_cost += bdgtperproject[i]
+            #total_cost += PROJECTS[i][0]
+            # add the net present value of the project to the total net present value of the portfolio
+            total_npv += npvperproject[i]
+            #total_npv += npv[i][1]
+    if total_cost > maxbdgt:
+        return 0,
+    return total_npv,
 
-    # Sort the list of NPV values in descending order
-    npv_ordered_portfolios2.sort(key=lambda x: x[1], reverse=True)
-    
-    #extract a one-dimensional array of the (already sorted) candidate portfolios
-    npv_ordered_portfolios2 = np.array(npv_ordered_portfolios2, dtype=object)[:,0]
-    
-    # Select the portfolio with the highest NPV
-    new_portfolio = npv_ordered_portfolios2[0]    
-    
-    # Add the selected portfolio to the list of tested portfolios
-    tested_portfolios.append(new_portfolio)
-    return new_portfolio
- 
+# Define the genetic algorithm parameters
+POPULATION_SIZE = 20
+P_CROSSOVER = 0.9
+P_MUTATION = 0.1
+MAX_GENERATIONS = 100
+HALL_OF_FAME_SIZE = 1
 
-def shake_portfolio(portfolio):
-    #print("executing_shake_portfolio")
-    # Initialize a list to store the NPV values of the candidate portfolios
-    npv_ordered_portfolios = []
-    
-    # Generate 10 random FEASIBLE portfolios
-    for i in range(10):
-        portfolio = np.random.permutation(portfolio)
-        iteration_counter = 0
-        # only accept the portfolio if it NOT tested yet AND it is feasible  
-        while True:
-            if tuple(portfolio) not in [tuple(p) for p in tested_portfolios] and portfolio_totalbudget(portfolio) < maxbdgt:
-                break
-            portfolio = np.random.permutation(portfolio)
-            iteration_counter += 1
-            if iteration_counter >= 50:
-                break
+# Define the individual creator
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMax)
 
-        # Calculate the NPV of the resulting portfolio
-        npv_portfolio = portfolio_npv(portfolio)
-        npv_ordered_portfolios.append((portfolio, npv_portfolio))
-        
-    # Sort the list of NPV values in descending order
-    npv_ordered_portfolios.sort(key=lambda x: x[1], reverse=True)
-    
-    #extract a one-dimensional array of the (already sorted) candidate portfolios
-    npv_ordered_portfolios = np.array(npv_ordered_portfolios, dtype=object)[:,0]
-    
-    # Select the portfolio with the highest NPV
-    selected_portfolio = npv_ordered_portfolios[0]    
-    
-    # Add the selected portfolio to the list of tested portfolios
-    tested_portfolios.append(selected_portfolio)
-    return selected_portfolio
+# Define the toolbox
+toolbox = base.Toolbox()
+toolbox.register("attr_bool", random.randint, 0, 1)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, nrcandidates)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+toolbox.register("evaluate", evaluate)
+toolbox.register("mate", tools.cxTwoPoint)
+toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+toolbox.register("select", tools.selTournament, tournsize=3)
+
+# Define the hall of fame
+hall_of_fame = tools.HallOfFame(HALL_OF_FAME_SIZE)
+
+# Define the statistics
+stats = tools.Statistics(lambda ind: ind.fitness.values)
+stats.register("max", max)
+
+
+
+#defining the function that maximizes the net present value of a portfolio of projects, while respecting the budget constraint (using a genetic algorithm)
+def maximize_npv():
+    # Initialize the population
+    population = toolbox.population(n=POPULATION_SIZE)
+    # Evaluate the individuals with an invalid fitness
+    invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
+    # This is just to assign the crowding distance to the individuals
+    # no actual selection is done
+    population = toolbox.select(population, len(population))
+    # Update the hall of fame with the generated individuals
+    hall_of_fame.update(population)
+    # Begin the generational process
+    for generation in range(MAX_GENERATIONS):
+        # Vary the population
+        offspring = algorithms.varAnd(population, toolbox, cxpb=P_CROSSOVER, mutpb=P_MUTATION)
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+        # Select the next generation population
+        population = toolbox.select(offspring, k=len(population))
+        # Update the hall of fame with the generated individuals
+        hall_of_fame.update(population)
+        record = stats.compile(population)
+        print(f"Generation {generation}: Max NPV = {record['max']}")
+    # return the optimal portfolio from the hall of fame their fitness and the total budget
+    return hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0])
 
 #defining the function that, for each budgetting confidence policy, computes the budgeted duration
 #of each project and the standard deviation of the budgeted duration (and the related budgeted cost)
@@ -207,7 +155,7 @@ budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 #initialize an array of standard deviations that is sized as far as nrcandidates
 stdevs = np.zeros((nrcandidates, 1))
 for i in range(nrcandidates):
-    iterations=10000
+    iterations=200
     #open ten different ODS files and store the results in a list after computing the CPM and MCS
     filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"
     #print(filename)
@@ -270,6 +218,7 @@ df0 = pd.DataFrame(data=mcs_results).T
 df0.rename(columns={0:"P01", 1:"P02", 2:"P03", 3:"P04", 4:"P05", 5:"P06", 6:"P07", 7:"P08", 8:"P09", 9:"P10"}, inplace=True)
 correlation_matrix0 = df0.corr()
 
+# this function calculates the npv of each project and then uses the maximizer function to obtain and return portfolio, npv and bdgt in a matrix (solutions)
 for i in range(len(budgetting_confidence_policies)):
     #I take the column of bdgtperproject_matrix that corresponds to the budgetting confidence policy
     bdgtperproject=bdgtperproject_matrix[:,i]
@@ -290,6 +239,9 @@ for i in range(len(budgetting_confidence_policies)):
     #defining the function that calculates the net present value of a project
     def npv(rate, cashflows):
         return sum([cf / (1 + rate) ** k for k, cf in enumerate(cashflows)])
+    # call the function that calculates the npv of each candidate project
+    npvperproject = npvperproject_calculator(wacc, cashflows)
+
     projectselection = maximize_npv()
     #assign the result from projectselection to the variable solutions
     solutions.append(projectselection)
