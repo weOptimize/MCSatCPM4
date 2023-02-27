@@ -254,13 +254,13 @@ plt.scatter(budgetting_confidence_policies, npv_results, color='grey')
 plt.title("NPV vs Budgetting Confidence Policy")
 plt.xlabel("Budgetting Confidence Policy")
 plt.ylabel("NPV")
+# rescale all fonts to 16
+plt.rcParams.update({'font.size': 14})
 #add the values of the npv results to the plot as annotations and displaced vertically a 1% of the y axis
 for i, txt in enumerate(npv_results):
     txt = "{:,}".format(round(txt))
     plt.annotate(txt, (budgetting_confidence_policies[i], npv_results[i]), textcoords="offset points", xytext=(0, 10), ha='center')
 plt.xlim(0.45, 1)
-#increase the size of all the fonts in the plot
-plt.rcParams.update({'font.size': 16})
 plt.grid()		
 #plt.show()
 
@@ -271,15 +271,15 @@ solution_portfolios = np.array(portfolio_results)
 fig, ax = plt.subplots()
 plt.imshow(solution_portfolios, cmap='binary', interpolation='nearest', vmin=0, vmax=1)
 plt.xlabel("Project", fontsize=12)
-plt.ylabel("Budgetting Confidence Policy", fontsize=12)
-plt.yticks(range(len(budgetting_confidence_policies)), budgetting_confidence_policies, fontsize=10)
-plt.xticks(np.arange(0, nrcandidates, 1), fontsize=10)
+plt.ylabel("Budgetting Confidence Policy", fontsize=14)
+plt.yticks(range(len(budgetting_confidence_policies)), budgetting_confidence_policies, fontsize=12)
+plt.xticks(np.arange(0, nrcandidates, 1), fontsize=12)
 plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=True)
 
 for i, budget in enumerate(budgets):
-    plt.text(nrcandidates + 0.5, i, "${:.2f}".format(budget), ha='left', va='center', fontsize=12)
+    plt.text(nrcandidates + 0.5, i, "${:.2f}".format(budget), ha='left', va='center', fontsize=14)
 
-plt.text(nrcandidates + 2, len(budgetting_confidence_policies) / 2, "Portfolio Budget", ha='center', va='center', rotation=270, fontsize=12)
+plt.text(nrcandidates + 2, len(budgetting_confidence_policies) / 2, "Portfolio Budget", ha='center', va='center', rotation=270, fontsize=14)
 plt.tight_layout()
 
 
