@@ -385,278 +385,6 @@ print(cm10r)
 
 
 
-#initialize dataframe df109 with size nrcandidates x iterations
-df109 = pd.DataFrame(np.zeros((iterations, nrcandidates)))
-# step 1: draw random variates from a multivariate normal distribution 
-# with the targeted correlation structure
-r0 = [0] * cm109.shape[0]                       # create vector r with as many zeros as correlation matrix has variables (row or columns)
-mv_norm = multivariate_normal(mean=r0, cov=cm109)    # means = vector of zeros; cov = targeted corr matrix
-rand_Nmv = mv_norm.rvs(iterations)                               # draw N random variates
-# step 2: convert the r * N multivariate variates to scores 
-rand_U = norm.cdf(rand_Nmv)   # use its cdf to generate N scores (probabilities between 0 and 1) from the multinormal random variates
-# step 3: instantiate the 10 marginal distributions 
-d_P1 = beta(a[0], b[0], loc[0], scale[0])
-d_P2 = beta(a[1], b[1], loc[1], scale[1])
-d_P3 = beta(a[2], b[2], loc[2], scale[2])
-d_P4 = beta(a[3], b[3], loc[3], scale[3])
-d_P5 = beta(a[4], b[4], loc[4], scale[4])
-d_P6 = beta(a[5], b[5], loc[5], scale[5])
-d_P7 = beta(a[6], b[6], loc[6], scale[6])
-d_P8 = beta(a[7], b[7], loc[7], scale[7])
-d_P9 = beta(a[8], b[8], loc[8], scale[8])
-d_P10 = beta(a[9], b[9], loc[9], scale[9])
-# step 4: apply the inverse of the marginal cdfs to the scores
-# draw N random variates for each of the three marginal distributions
-# WITHOUT applying a copula
-rand_P1 = d_P1.rvs(iterations)
-rand_P2 = d_P2.rvs(iterations)
-rand_P3 = d_P3.rvs(iterations)
-rand_P4 = d_P4.rvs(iterations)
-rand_P5 = d_P5.rvs(iterations)
-rand_P6 = d_P6.rvs(iterations)
-rand_P7 = d_P7.rvs(iterations)
-rand_P8 = d_P8.rvs(iterations)
-rand_P9 = d_P9.rvs(iterations)
-rand_P10 = d_P10.rvs(iterations)
-# initial correlation structure before applying a copula
-c_before = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-# step 4: draw N random variates for each of the three marginal distributions
-# and use as inputs the correlated uniform scores we have generated in step 2
-rand_P1 = d_P1.ppf(rand_U[:, 0])
-rand_P2 = d_P2.ppf(rand_U[:, 1])
-rand_P3 = d_P3.ppf(rand_U[:, 2])
-rand_P4 = d_P4.ppf(rand_U[:, 3])
-rand_P5 = d_P5.ppf(rand_U[:, 4])
-rand_P6 = d_P6.ppf(rand_U[:, 5])
-rand_P7 = d_P7.ppf(rand_U[:, 6])
-rand_P8 = d_P8.ppf(rand_U[:, 7])
-rand_P9 = d_P9.ppf(rand_U[:, 8])
-rand_P10 = d_P10.ppf(rand_U[:, 9])
-# final correlation structure after applying a copula
-c_after = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-print("Correlation matrix before applying a copula:")
-print(c_before)
-print("Correlation matrix after applying a copula:")
-print(c_after)
-# step 5: store the N random variates in the dataframe
-df109[0] = rand_P1
-df109[1] = rand_P2
-df109[2] = rand_P3
-df109[3] = rand_P4
-df109[4] = rand_P5
-df109[5] = rand_P6
-df109[6] = rand_P7
-df109[7] = rand_P8
-df109[8] = rand_P9
-df109[9] = rand_P10
-df109.rename(columns={0:"P01", 1:"P02", 2:"P03", 3:"P04", 4:"P05", 5:"P06", 6:"P07", 7:"P08", 8:"P09", 9:"P10"}, inplace=True)
-#print('df1_09')
-#print(df1_09)
-print('df109')
-print(df109)
-#multiply dataframe 109 by the chosen portfolio to reflect the effect of the projects that are chosen
-pf_df109 = df109 * chosen_portfolio
-#sum the rows of the new dataframe to calculate the total cost of the portfolio
-pf_cost109 = pf_df109.sum(axis=1)
-#plot the histogram of the resulting costs
-#plt.figure(4)
-# Create a 2x2 subplot grid
-fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
-ax[0, 0].hist(pf_cost, bins=200, color = 'grey', range=(3000, 4800))
-ax[0, 0].hist(pf_cost109, bins=200, color = 'black', histtype="step")
-
-#extract the maximum of the resulting costs
-maxcost109 = max(pf_cost109)
-print("max cost:")
-print(maxcost109)
-#count how many results were higher than maxbdgt
-count = 0
-for i in range(pf_cost109.__len__()):
-    if pf_cost109[i] > maxbdgt:
-        count = count + 1
-#array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
-portfolio_risk[1] = 1-count/iterations
-
-
-#initialize dataframe df106 with size nrcandidates x iterations
-df106 = pd.DataFrame(np.zeros((iterations, nrcandidates)))
-# step 1: draw random variates from a multivariate normal distribution 
-# with the targeted correlation structure
-r0 = [0] * cm106.shape[0]                       # create vector r with as many zeros as correlation matrix has variables (row or columns)
-mv_norm = multivariate_normal(mean=r0, cov=cm106)    # means = vector of zeros; cov = targeted corr matrix
-rand_Nmv = mv_norm.rvs(iterations)                               # draw N random variates
-# step 2: convert the r * N multivariate variates to scores 
-rand_U = norm.cdf(rand_Nmv)   # use its cdf to generate N scores (probabilities between 0 and 1) from the multinormal random variates
-# step 3: instantiate the 10 marginal distributions 
-d_P1 = beta(a[0], b[0], loc[0], scale[0])
-d_P2 = beta(a[1], b[1], loc[1], scale[1])
-d_P3 = beta(a[2], b[2], loc[2], scale[2])
-d_P4 = beta(a[3], b[3], loc[3], scale[3])
-d_P5 = beta(a[4], b[4], loc[4], scale[4])
-d_P6 = beta(a[5], b[5], loc[5], scale[5])
-d_P7 = beta(a[6], b[6], loc[6], scale[6])
-d_P8 = beta(a[7], b[7], loc[7], scale[7])
-d_P9 = beta(a[8], b[8], loc[8], scale[8])
-d_P10 = beta(a[9], b[9], loc[9], scale[9])
-# draw N random variates for each of the three marginal distributions
-# WITHOUT applying a copula
-rand_P1 = d_P1.rvs(iterations)
-rand_P2 = d_P2.rvs(iterations)
-rand_P3 = d_P3.rvs(iterations)
-rand_P4 = d_P4.rvs(iterations)
-rand_P5 = d_P5.rvs(iterations)
-rand_P6 = d_P6.rvs(iterations)
-rand_P7 = d_P7.rvs(iterations)
-rand_P8 = d_P8.rvs(iterations)
-rand_P9 = d_P9.rvs(iterations)
-rand_P10 = d_P10.rvs(iterations)
-# initial correlation structure before applying a copula
-c_before = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-# step 4: draw N random variates for each of the three marginal distributions
-# and use as inputs the correlated uniform scores we have generated in step 2
-rand_P1 = d_P1.ppf(rand_U[:, 0])
-rand_P2 = d_P2.ppf(rand_U[:, 1])
-rand_P3 = d_P3.ppf(rand_U[:, 2])
-rand_P4 = d_P4.ppf(rand_U[:, 3])
-rand_P5 = d_P5.ppf(rand_U[:, 4])
-rand_P6 = d_P6.ppf(rand_U[:, 5])
-rand_P7 = d_P7.ppf(rand_U[:, 6])
-rand_P8 = d_P8.ppf(rand_U[:, 7])
-rand_P9 = d_P9.ppf(rand_U[:, 8])
-rand_P10 = d_P10.ppf(rand_U[:, 9])
-# final correlation structure after applying a copula
-c_after = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-print("Correlation matrix before applying a copula:")
-print(c_before)
-print("Correlation matrix after applying a copula:")
-print(c_after)
-# step 5: store the N random variates in the dataframe
-df106[0] = rand_P1
-df106[1] = rand_P2
-df106[2] = rand_P3
-df106[3] = rand_P4
-df106[4] = rand_P5
-df106[5] = rand_P6
-df106[6] = rand_P7
-df106[7] = rand_P8
-df106[8] = rand_P9
-df106[9] = rand_P10
-df106.rename(columns={0:"P01", 1:"P02", 2:"P03", 3:"P04", 4:"P05", 5:"P06", 6:"P07", 7:"P08", 8:"P09", 9:"P10"}, inplace=True)
-
-#multiply dataframe 106 by the chosen portfolio to reflect the effect of the projects that are chosen
-pf_df106 = df106 * chosen_portfolio
-#sum the rows of the new dataframe to calculate the total cost of the portfolio
-pf_cost106 = pf_df106.sum(axis=1)
-#plot the histogram of the resulting costs as another frame inside figure 4
-#plt.figure(4)
-ax[0, 1].hist(pf_cost, bins=200, color = 'grey', range=(3000, 4800))
-ax[0, 1].hist(pf_cost106, bins=200, color = 'black', histtype="step")
-
-#extract the maximum of the resulting costs
-maxcost106 = max(pf_cost106)
-print("max cost:")
-print(maxcost106)
-#count how many results were higher than maxbdgt
-count = 0
-for i in range(pf_cost106.__len__()):
-    if pf_cost106[i] > maxbdgt:
-        count = count + 1
-#array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
-portfolio_risk[2] = 1-count/iterations
-
-#initialize dataframe df103 with size nrcandidates x iterations
-df103 = pd.DataFrame(np.zeros((iterations, nrcandidates)))
-# step 1: draw random variates from a multivariate normal distribution 
-# with the targeted correlation structure
-r0 = [0] * cm103.shape[0]                       # create vector r with as many zeros as correlation matrix has variables (row or columns)
-mv_norm = multivariate_normal(mean=r0, cov=cm103)    # means = vector of zeros; cov = targeted corr matrix
-rand_Nmv = mv_norm.rvs(iterations)                               # draw N random variates
-# step 2: convert the r * N multivariate variates to scores 
-rand_U = norm.cdf(rand_Nmv)   # use its cdf to generate N scores (probabilities between 0 and 1) from the multinormal random variates
-# step 3: instantiate the 10 marginal distributions 
-d_P1 = beta(a[0], b[0], loc[0], scale[0])
-d_P2 = beta(a[1], b[1], loc[1], scale[1])
-d_P3 = beta(a[2], b[2], loc[2], scale[2])
-d_P4 = beta(a[3], b[3], loc[3], scale[3])
-d_P5 = beta(a[4], b[4], loc[4], scale[4])
-d_P6 = beta(a[5], b[5], loc[5], scale[5])
-d_P7 = beta(a[6], b[6], loc[6], scale[6])
-d_P8 = beta(a[7], b[7], loc[7], scale[7])
-d_P9 = beta(a[8], b[8], loc[8], scale[8])
-d_P10 = beta(a[9], b[9], loc[9], scale[9])
-# draw N random variates for each of the three marginal distributions
-# WITHOUT applying a copula
-rand_P1 = d_P1.rvs(iterations)
-rand_P2 = d_P2.rvs(iterations)
-rand_P3 = d_P3.rvs(iterations)
-rand_P4 = d_P4.rvs(iterations)
-rand_P5 = d_P5.rvs(iterations)
-rand_P6 = d_P6.rvs(iterations)
-rand_P7 = d_P7.rvs(iterations)
-rand_P8 = d_P8.rvs(iterations)
-rand_P9 = d_P9.rvs(iterations)
-rand_P10 = d_P10.rvs(iterations)
-# initial correlation structure before applying a copula
-c_before = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-# step 4: draw N random variates for each of the three marginal distributions
-# and use as inputs the correlated uniform scores we have generated in step 2
-rand_P1 = d_P1.ppf(rand_U[:, 0])
-rand_P2 = d_P2.ppf(rand_U[:, 1])
-rand_P3 = d_P3.ppf(rand_U[:, 2])
-rand_P4 = d_P4.ppf(rand_U[:, 3])
-rand_P5 = d_P5.ppf(rand_U[:, 4])
-rand_P6 = d_P6.ppf(rand_U[:, 5])
-rand_P7 = d_P7.ppf(rand_U[:, 6])
-rand_P8 = d_P8.ppf(rand_U[:, 7])
-rand_P9 = d_P9.ppf(rand_U[:, 8])
-rand_P10 = d_P10.ppf(rand_U[:, 9])
-# final correlation structure after applying a copula
-c_after = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-print("Correlation matrix before applying a copula:")
-print(c_before)
-print("Correlation matrix after applying a copula:")
-print(c_after)
-# step 5: store the N random variates in the dataframe
-df103[0] = rand_P1
-df103[1] = rand_P2
-df103[2] = rand_P3
-df103[3] = rand_P4
-df103[4] = rand_P5
-df103[5] = rand_P6
-df103[6] = rand_P7
-df103[7] = rand_P8
-df103[8] = rand_P9
-df103[9] = rand_P10
-df103.rename(columns={0:"P01", 1:"P02", 2:"P03", 3:"P04", 4:"P05", 5:"P06", 6:"P07", 7:"P08", 8:"P09", 9:"P10"}, inplace=True)
-#print('df1_09')
-#print(df1_09)
-print('df103')
-print(df103)
-#multiply dataframe 103 by the chosen portfolio to reflect the effect of the projects that are chosen
-pf_df103 = df103 * chosen_portfolio
-#sum the rows of the new dataframe to calculate the total cost of the portfolio
-pf_cost103 = pf_df103.sum(axis=1)
-#plot the histogram of the resulting costs
-#plt.figure(4)
-ax[1, 0].hist(pf_cost, bins=200, color = 'grey', range=(3000, 4800), label = 'uncorrelated histogram')
-ax[1, 0].hist(pf_cost103, bins=200, color = 'black', histtype="step", label = 'correlated histogram')
-# Set the common legend
-fig.legend(loc='lower center', ncol=4)
-
-
-#extract the maximum of the resulting costs
-maxcost103 = max(pf_cost103)
-print("max cost:")
-print(maxcost103)
-#count how many results were higher than maxbdgt
-count = 0
-for i in range(pf_cost103.__len__()):
-    if pf_cost103[i] > maxbdgt:
-        count = count + 1
-#array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
-portfolio_risk[3] = 1-count/iterations
-
-
 #initialize dataframe df10r with size nrcandidates x iterations
 df10r = pd.DataFrame(np.zeros((iterations, nrcandidates)))
 # step 1: draw random variates from a multivariate normal distribution 
@@ -760,25 +488,25 @@ plt.xlabel('Projects and cost in k€')
 plt.ylabel('Projects and cost in k€')
 #plt.show()
 # plot the scatter matrix
-pd.plotting.scatter_matrix(df109, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
+# pd.plotting.scatter_matrix(df109, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
 # add title and axis labels
-plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.9')
-plt.xlabel('Projects and cost in k€')
-plt.ylabel('Projects and cost in k€')
+# plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.9')
+# plt.xlabel('Projects and cost in k€')
+# plt.ylabel('Projects and cost in k€')
 #plt.show()
 # plot the scatter matrix
-pd.plotting.scatter_matrix(df106, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
+# pd.plotting.scatter_matrix(df106, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
 # add title and axis labels
-plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.6')
-plt.xlabel('Projects and cost in k€')
-plt.ylabel('Projects and cost in k€')
+# plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.6')
+# plt.xlabel('Projects and cost in k€')
+# plt.ylabel('Projects and cost in k€')
 #plt.show()
 # plot the scatter matrix
-pd.plotting.scatter_matrix(df103, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
+# pd.plotting.scatter_matrix(df103, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
 # add title and axis labels
-plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.3')
-plt.xlabel('Projects and cost in k€')
-plt.ylabel('Projects and cost in k€')
+# plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.3')
+# plt.xlabel('Projects and cost in k€')
+# plt.ylabel('Projects and cost in k€')
 #plt.show()
 # plot the scatter matrix
 pd.plotting.scatter_matrix(df10r, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
