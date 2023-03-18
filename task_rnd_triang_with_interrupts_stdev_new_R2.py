@@ -243,6 +243,25 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
 
+def MCS_NPV(cashflows, iterations):
+	projectnpv = []
+	for i in range(iterations):
+		wacc = np.random.normal(0.1,0.04)
+		#convert cashflows into a numpy array
+		cashflows = np.array(cashflows)
+		#substitute the cashflows stored by a stochastic variable that follows a normal distribution with mean equal to the cashflow and standard deviation equal to the cashflow*0.3
+		stochcashflows = np.random.normal(cashflows, cashflows*0.3)
+		#compute the net present value of the project
+		npvvalue = npv(wacc, stochcashflows)
+		projectnpv.append(npvvalue)
+	return projectnpv
+
+
+#defining the function that calculates the net present value of a project
+def npv(rate, cashflows):
+	return sum([cf / (1 + rate) ** k for k, cf in enumerate(cashflows)])
+
+
 
 def MCS_CPM_PF(mydata, iterations):
 	durationsplus = []

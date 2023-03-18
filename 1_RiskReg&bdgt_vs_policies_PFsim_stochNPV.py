@@ -49,26 +49,23 @@ solution_portfolios = []
 correlation_matrix = []
 
 #defining the function that calculates the net present value of a portfolio of projects
-def portfolio_npv(portfolio):
-    npv_portfolio = 0
-    for i in range(nrcandidates):
-        if portfolio[i] == 1:
-            npv_portfolio += npv(wacc, cashflows[i])
-    return npv_portfolio
+#def portfolio_npv(portfolio):
+#    npv_portfolio = 0
+#    for i in range(nrcandidates):
+#        if portfolio[i] == 1:
+#            npv_portfolio += npv(wacc, cashflows[i])
+#    return npv_portfolio
 
-#defining the function that stores in an array the net present value of each candidate project
-def npvperproject_calculator(wacc, cashflows):
-    npvperproject = []
-    for i in range(nrcandidates):
-        npvperproject.append(npv(wacc, cashflows[i]))
-    return npvperproject
 
 #defining the function that calculates the total budget of a portfolio of projects
 def portfolio_totalbudget(portfolio):
     totalbudget_portfolio = 0
+    #totalbudget_npv = 0
     for i in range(nrcandidates):
         if portfolio[i] == 1:
             totalbudget_portfolio += bdgtperproject[i]
+            #totalbudget_npv += npvperproject[i]
+    #return totalbudget_portfolio, totalbudget_npv
     return totalbudget_portfolio
 
 # Defining the fitness function
@@ -76,6 +73,7 @@ def evaluate(individual):
     total_cost = 0
     total_npv = 0
     for i in range(nrcandidates):
+        #print(total_cost)
         if individual[i] == 1:
             total_cost += bdgtperproject[i]
             #total_cost += PROJECTS[i][0]
@@ -87,10 +85,10 @@ def evaluate(individual):
     return total_npv,
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 50 #was 100
+POPULATION_SIZE = 100 #was 100
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
-MAX_GENERATIONS = 200 #was 500
+MAX_GENERATIONS = 500 #was 500
 HALL_OF_FAME_SIZE = 1
 
 # Create the individual and population classes based on the list of attributes and the fitness function
@@ -151,7 +149,7 @@ def maximize_npv():
         # hall_of_fame.sort(key=itemgetter(0), reverse=True)
         population = toolbox.select(offspring, k=len(population))    
         record = stats.compile(population)
-        print(f"Generation {generation}: Max NPV = {record['max']}")
+        # print(f"Generation {generation}: Max NPV = {record['max']}")
     # return the optimal portfolio from the hall of fame their fitness and the total budget
     print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0]))
     return hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0])
@@ -160,10 +158,12 @@ def maximize_npv():
 #of each project and the standard deviation of the budgeted duration (and the related budgeted cost)
 #initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
 budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
-#initialize an array of standard deviations that is sized as far as nrcandidates
+#initialize matrices to store bdgt and npv
+bdgtperproject_matrix = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
+npvperproject_matrix = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 #stdevs = np.zeros((nrcandidates, 1))
 for i in range(nrcandidates):
-    iterations=100
+    iterations=2000
     #open ten different ODS files and store the results in a list after computing the CPM and MCS
     filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"
     #print(filename)
@@ -174,6 +174,17 @@ for i in range(nrcandidates):
     myriskreg = read_ods(filename, "riskreg")
     #compute MonteCarlo Simulation and store the results in an array called "sim_costs"
     sim_costs = MCS_CPM_RR(mydata, myriskreg, iterations)
+    cashflows = []
+    # open the file that contains the expected cash flows for each project and store the NPV results in a list
+    with open('RND_Schedules/expected_cash_flows.txt') as f:
+        j=0
+        for line in f:
+            cashflows.append([float(x) for x in line.split()])
+            j=j+1
+    # compute MonteCarlo Simulation and store the results in an array called "sim_costs"
+    sim_NPV = MCS_NPV(cashflows, iterations)
+
+    
     #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the iterations
     mcs_results.append(sim_costs)
     for j in range(len(budgetting_confidence_policies)):
@@ -181,10 +192,15 @@ for i in range(nrcandidates):
         #print(budgetting_confidence_policy)
         #extract the survival value from the array sim_duration that corresponds to the budgetting confidence policy
         survival_value = survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations)
+        median_npv = expected_value_extractor(sim_NPV, iterations)
         #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
-        budgetedcosts[i][j]=survival_value
+        bdgtperproject_matrix[i][j]=survival_value
+        npvperproject_matrix[i][j]=median_npv-survival_value
     # The *1 is there because in the past I performed the multiplication here
-    bdgtperproject_matrix=budgetedcosts*1
+    # bdgtperproject_matrix=budgetedcosts*1
+    # npvperproject_matrix=projectednpv*1
+
+
 
 #check the parameters of beta distribution for each of the mcs_results
 betaparams = []
@@ -227,26 +243,12 @@ correlation_matrix0 = df0.corr()
 for i in range(len(budgetting_confidence_policies)):
     #I take the column of bdgtperproject_matrix that corresponds to the budgetting confidence policy
     bdgtperproject=bdgtperproject_matrix[:,i]
+    print(bdgtperproject)
+    npvperproject=npvperproject_matrix[:,i]
+    print(npvperproject)
     #I define the budget constraint #was 250k
     maxbdgt = 3800
     #open a file named "expected_cash_flows.txt", that includes ten rows and five columns, and store the values in a list. Each row corresponds to a project, and each column corresponds to a year
-    cashflows = []
-    with open('RND_Schedules/expected_cash_flows.txt') as f:
-        j=0
-        for line in f:
-            cashflows.append([float(x) for x in line.split()])
-            #substract the budgeted cost (inside bdgtperproject) from the first column (year 0) of the cashflows for each corresponding project
-            cashflows[j][0] = cashflows[j][0] - bdgtperproject[j]
-            #cashflows[j][0] = cashflows[j][0]
-            j=j+1
-    #initialize a variable that reflects the weighted average cost of capital
-    wacc = 0.1
-    #defining the function that calculates the net present value of a project
-    def npv(rate, cashflows):
-        return sum([cf / (1 + rate) ** k for k, cf in enumerate(cashflows)])
-    # call the function that calculates the npv of each candidate project
-    npvperproject = npvperproject_calculator(wacc, cashflows)
-
     projectselection = maximize_npv()
     #assign the result from projectselection to the variable solutions
     solutions.append(projectselection)
@@ -273,7 +275,7 @@ for i, txt in enumerate(npv_results):
     txt = "{:,}".format(round(txt))
     plt.annotate(txt, (budgetting_confidence_policies[i], npv_results[i]), textcoords="offset points", xytext=(0, 10), ha='center')
 plt.xlim(0.45, 1)
-plt.grid()		
+plt.grid()
 #plt.show()
 
 # create a square array with the information included in portfolio_results
@@ -454,15 +456,6 @@ df10r.rename(columns={0:"P01", 1:"P02", 2:"P03", 3:"P04", 4:"P05", 5:"P06", 6:"P
 pf_df10r = df10r * chosen_portfolio
 #sum the rows of the new dataframe to calculate the total cost of the portfolio
 pf_cost10r = pf_df10r.sum(axis=1)
-#plot the histogram of the resulting costs
-#plt.figure(4)
-ax[1,1].hist(pf_cost, bins=200, color = 'grey', range=(3000, 4800))
-ax[1,1].hist(pf_cost10r, bins=200, color = 'black', histtype="step")
-ax[0, 0].set_title('Correlations: 0.9')
-ax[0, 1].set_title('Correlations: 0.6')
-ax[1, 0].set_title('Correlations: 0.3')
-ax[1, 1].set_title('Random Correlations')
-
 
 #extract the maximum of the resulting costs
 maxcost10r = max(pf_cost10r)
@@ -487,27 +480,7 @@ plt.suptitle('Correlation matrix of the MCS results where all projects are fully
 plt.xlabel('Projects and cost in k€')
 plt.ylabel('Projects and cost in k€')
 #plt.show()
-# plot the scatter matrix
-# pd.plotting.scatter_matrix(df109, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
-# add title and axis labels
-# plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.9')
-# plt.xlabel('Projects and cost in k€')
-# plt.ylabel('Projects and cost in k€')
-#plt.show()
-# plot the scatter matrix
-# pd.plotting.scatter_matrix(df106, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
-# add title and axis labels
-# plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.6')
-# plt.xlabel('Projects and cost in k€')
-# plt.ylabel('Projects and cost in k€')
-#plt.show()
-# plot the scatter matrix
-# pd.plotting.scatter_matrix(df103, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
-# add title and axis labels
-# plt.suptitle('Correlation matrix of the MCS results where all projects are correlated by 0.3')
-# plt.xlabel('Projects and cost in k€')
-# plt.ylabel('Projects and cost in k€')
-#plt.show()
+
 # plot the scatter matrix
 pd.plotting.scatter_matrix(df10r, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
 # add title and axis labels
