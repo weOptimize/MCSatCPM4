@@ -246,13 +246,17 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 def MCS_NPV(cashflows, iterations):
 	projectnpv = []
 	for i in range(iterations):
-		wacc = np.random.normal(0.1,0.04)
+		wacc = np.random.normal(0.1,0.06)
 		#convert cashflows into a numpy array
 		cashflows = np.array(cashflows)
 		#substitute the cashflows stored by a stochastic variable that follows a normal distribution with mean equal to the cashflow and standard deviation equal to the cashflow*0.3
-		stochcashflows = np.random.normal(cashflows, cashflows*0.3)
+		stochcashflows = np.random.normal(cashflows, cashflows*0.2)
+		# transpose the array
+		stochcashflows = stochcashflows.T
+		#print(stochcashflows)
 		#compute the net present value of the project
 		npvvalue = npv(wacc, stochcashflows)
+		#print(npvvalue)
 		projectnpv.append(npvvalue)
 	return projectnpv
 

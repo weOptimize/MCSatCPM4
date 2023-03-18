@@ -163,7 +163,7 @@ bdgtperproject_matrix = np.zeros((nrcandidates, len(budgetting_confidence_polici
 npvperproject_matrix = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 #stdevs = np.zeros((nrcandidates, 1))
 for i in range(nrcandidates):
-    iterations=2000
+    iterations=1000
     #open ten different ODS files and store the results in a list after computing the CPM and MCS
     filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"
     #print(filename)
@@ -175,30 +175,35 @@ for i in range(nrcandidates):
     #compute MonteCarlo Simulation and store the results in an array called "sim_costs"
     sim_costs = MCS_CPM_RR(mydata, myriskreg, iterations)
     cashflows = []
-    # open the file that contains the expected cash flows for each project and store the NPV results in a list
+    # open the file that contains the expected cash flows, and extract the ones for the project i (located in row i)
     with open('RND_Schedules/expected_cash_flows.txt') as f:
-        j=0
-        for line in f:
-            cashflows.append([float(x) for x in line.split()])
-            j=j+1
-    # compute MonteCarlo Simulation and store the results in an array called "sim_costs"
-    sim_NPV = MCS_NPV(cashflows, iterations)
+        # read all the lines in the file as a list
+        lines = f.readlines()
+        # get the line at index i (assuming i is already defined)
+        line = lines[i]
+        # split the line by whitespace and convert each element to a float
+        cashflows = list(map(float, line.split()))    
 
+    # compute MonteCarlo Simulation and store the results in an array called "sim_NPV"
+    #print(cashflows)
+    sim_NPV = MCS_NPV(cashflows, iterations)
+    print(sim_NPV)
     
     #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the iterations
     mcs_results.append(sim_costs)
+    #compute the median of the NPV results
+    median_npv = expected_value_extractor(sim_NPV, iterations)
     for j in range(len(budgetting_confidence_policies)):
         budgetting_confidence_policy = budgetting_confidence_policies[j]
         #print(budgetting_confidence_policy)
         #extract the survival value from the array sim_duration that corresponds to the budgetting confidence policy
         survival_value = survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations)
-        median_npv = expected_value_extractor(sim_NPV, iterations)
         #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
         bdgtperproject_matrix[i][j]=survival_value
         npvperproject_matrix[i][j]=median_npv-survival_value
     # The *1 is there because in the past I performed the multiplication here
     # bdgtperproject_matrix=budgetedcosts*1
-    # npvperproject_matrix=projectednpv*1
+    print(npvperproject_matrix)
 
 
 
