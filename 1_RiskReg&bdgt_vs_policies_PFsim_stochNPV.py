@@ -187,7 +187,7 @@ for i in range(nrcandidates):
     # compute MonteCarlo Simulation and store the results in an array called "sim_NPV"
     #print(cashflows)
     sim_NPV = MCS_NPV(cashflows, iterations)
-    print(sim_NPV)
+    #print(sim_NPV)
     
     #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the iterations
     mcs_results.append(sim_costs)
@@ -203,7 +203,7 @@ for i in range(nrcandidates):
         npvperproject_matrix[i][j]=median_npv-survival_value
     # The *1 is there because in the past I performed the multiplication here
     # bdgtperproject_matrix=budgetedcosts*1
-    print(npvperproject_matrix)
+    #print(npvperproject_matrix)
 
 
 
