@@ -47,8 +47,6 @@ solution_portfolios = []
 #defining the correlation matrix to be used in the monte carlo simulation (and as check when the correlations are expected to be 0)
 correlation_matrix = []
 
-#defining the function that, for each budgetting confidence policy, computes the budgeted duration
-#of each project and the standard deviation of the budgeted duration (and the related budgeted cost)
 #initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
 budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 
@@ -113,7 +111,7 @@ for i in range(len(budgetting_confidence_policies)):
     print(npvperproject)
     #I define the budget constraint #was 250k
     maxbdgt = 3800
-    #open a file named "expected_cash_flows.txt", that includes ten rows and five columns, and store the values in a list. Each row corresponds to a project, and each column corresponds to a year
+    #execute the maximizer function to obtain the portfolio, and its npv and bdgt
     projectselection = maximize_npv()
     #assign the result from projectselection to the variable solutions
     solutions.append(projectselection)
@@ -389,18 +387,12 @@ plt.grid(axis='y')
 plt.show()
 
 #make sure no legend appears in the next plot
-plt.figure(12)
-plt.legend().set_visible(False)
+#plt.figure(12)
+#plt.legend().set_visible(False)
 #heatmap of the correlation matrix cm10r
-sns.set(font_scale=1.15)
-sns.heatmap(cm10r, annot=True, cmap="Greys")
+#sns.set(font_scale=1.15)
+#sns.heatmap(cm10r, annot=True, cmap="Greys")
 
-plt.show()
+#plt.show()
 #*** execution time
 print("Execution time: %s milli-seconds" %((time.time() - start_time)* 1000))
-
-
-  
-
-
-
