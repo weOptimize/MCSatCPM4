@@ -338,6 +338,9 @@ for i in range(pf_cost10r.__len__()):
 #array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
 portfolio_risk[4] = 1-count/iterations
 
+#*** execution time
+print("Execution time: %s milli-seconds" %((time.time() - start_time)* 1000))
+
 #print(df0)
 #print(correlation_matrix0)
 # plot the scatter matrix
@@ -394,5 +397,3 @@ plt.show()
 #sns.heatmap(cm10r, annot=True, cmap="Greys")
 
 #plt.show()
-#*** execution time
-print("Execution time: %s milli-seconds" %((time.time() - start_time)* 1000))
