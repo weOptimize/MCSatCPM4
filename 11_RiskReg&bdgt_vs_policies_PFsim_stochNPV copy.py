@@ -7,7 +7,7 @@ start_time = time.time()
 
 #get budgetting confidence policy
 #budgetting_confidence_policies = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
-budgetting_confidence_policies = [0.8]
+budgetting_confidence_policies = [0.75]
 #array to store all budgeted durations linked to the budgetting confidence policy
 budgeteddurations = []
 stdevs = []
@@ -258,8 +258,6 @@ df10r = pd.DataFrame(np.zeros((iterations, nrcandidates)))
 # step 1: draw random variates from a multivariate normal distribution 
 # with the targeted correlation structure
 r0 = [0] * cm10r.shape[0]                       # create vector r with as many zeros as correlation matrix has variables (row or columns)
-# convert cm10r to a covariance matrix
-cm10r = np.cov(cm10r)
 mv_norm = multivariate_normal(mean=r0, cov=cm10r)    # means = vector of zeros; cov = targeted corr matrix
 rand_Nmv = mv_norm.rvs(iterations)                               # draw N random variates
 # step 2: convert the r * N multivariate variates to scores 
