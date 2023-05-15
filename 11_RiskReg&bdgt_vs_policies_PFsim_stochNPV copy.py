@@ -165,13 +165,7 @@ plt.text(nrcandidates + 2, len(budgetting_confidence_policies) / 2, "Portfolio B
 plt.tight_layout()
 
 
-#calculate the variance of the portfolio for each budgetting confidence policy by taking the sum of the squared standard deviations of each project
-#portfolio_var = sum(stdevs**2)
-#calculate the standard deviation of the portfolio for each budgetting confidence policy by taking the square root of the variance
-#portfolio_stdev = np.sqrt(portfolio_var)
-#print(solution_portfolios)
-#print(portfolio_var)
-#print(portfolio_stdev)
+
 
 #extract the sixth portfolio included in array portfolio_results (RESTORE TO SIX WHEN MORE THAN ONE BCP!!!!!!!!!!!!!)
 chosen_portfolio = portfolio_results[0]
@@ -224,19 +218,22 @@ portfolio_risk = np.zeros(5)
 portfolio_risk[0] = (1-count/iterations)
 
 # Correlation matrix to be used in the next mcs simulation
-cm109 = np.full((10, 10), 0.9)
-np.fill_diagonal(cm109, 1)
+#cm109 = np.full((10, 10), 0.9)
+#np.fill_diagonal(cm109, 1)
 
 # Correlation matrix to be used in the next mcs simulation
-cm106 = np.full((10, 10), 0.6)
-np.fill_diagonal(cm106, 1)
+#cm106 = np.full((10, 10), 0.6)
+#np.fill_diagonal(cm106, 1)
 
 # Correlation matrix to be used in the next mcs simulation
-cm103 = np.full((10, 10), 0.3)
-np.fill_diagonal(cm103, 1)
+#cm103 = np.full((10, 10), 0.3)
+#np.fill_diagonal(cm103, 1)
 
 
 # *********Correlation matrix with random values between 0 and 1, but positive semidefinite***************
+# Set the seed value for the random number generator  
+seed_value = 1005  
+np.random.seed(seed_value)
 # Generate a random symmetric matrix
 A = np.random.rand(10, 10)
 A = (A + A.T) / 2
@@ -261,6 +258,8 @@ df10r = pd.DataFrame(np.zeros((iterations, nrcandidates)))
 # step 1: draw random variates from a multivariate normal distribution 
 # with the targeted correlation structure
 r0 = [0] * cm10r.shape[0]                       # create vector r with as many zeros as correlation matrix has variables (row or columns)
+# convert cm10r to a covariance matrix
+cm10r = np.cov(cm10r)
 mv_norm = multivariate_normal(mean=r0, cov=cm10r)    # means = vector of zeros; cov = targeted corr matrix
 rand_Nmv = mv_norm.rvs(iterations)                               # draw N random variates
 # step 2: convert the r * N multivariate variates to scores 
@@ -344,22 +343,16 @@ print("Execution time: %s milli-seconds" %((time.time() - start_time)* 1000))
 #print(df0)
 #print(correlation_matrix0)
 # plot the scatter matrix
-pd.plotting.scatter_matrix(df0, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
+#pd.plotting.scatter_matrix(df0, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
 #plot the scatter matrix of df0 with seaborn pairplot function with grey color and a diagonal with a kde plot
 #sns.pairplot(df0, diag_kind="kde", palette="Greys")
 # add title and axis labels
-plt.suptitle('Correlation matrix of the MCS results where all projects are fully independent (in k€)')
-plt.xlabel('Projects and cost in k€')
-plt.ylabel('Projects and cost in k€')
+#plt.suptitle('Correlation matrix of the MCS results where all projects are fully independent (in k€)')
+#plt.xlabel('Projects and cost in k€')
+#plt.ylabel('Projects and cost in k€')
 #plt.show()
 
-# plot the scatter matrix
-pd.plotting.scatter_matrix(df10r, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
-# add title and axis labels
-plt.suptitle('Correlation matrix of the MCS results where all projs are randomly correlated')
-plt.xlabel('Projects and cost in k€')
-plt.ylabel('Projects and cost in k€')
-#plt.show()
+
 
 #convert the array of portfolio risks into a dataframe with header each of the correlation levels used
 df_portfolio_risk = pd.DataFrame(portfolio_risk)
@@ -370,7 +363,12 @@ df_portfolio_risk.rename(columns={0:"0", 1:"0.9", 2:"0.6", 3:"0.3", 4:"random"},
 #current_cols = df_portfolio_risk.columns
 print(df_portfolio_risk)
 
-
+# plot the scatter matrix
+pd.plotting.scatter_matrix(df10r, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
+# add title and axis labels
+plt.suptitle('Correlation matrix of the MCS results where all projs are randomly correlated')
+plt.xlabel('Projects and cost in k€')
+plt.ylabel('Projects and cost in k€')
 
 # Plot the portfolio risks
 df_portfolio_risk.plot(kind='bar', title='Portfolio risks')
