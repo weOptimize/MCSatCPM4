@@ -114,7 +114,7 @@ def maximize_npv():
         # hall_of_fame.sort(key=itemgetter(0), reverse=True)
         population = toolbox.select(offspring, k=len(population))    
         record = stats.compile(population)
-        # print(f"Generation {generation}: Max NPV = {record['max']}")
+        print(f"Generation {generation}: Max NPV = {record['max']}")
 
     #de momento me dejo de complicarme con el hall of fame y me quedo con el último individuo de la última generación
     # return the optimal portfolio from the hall of fame, their fitness and the total budget

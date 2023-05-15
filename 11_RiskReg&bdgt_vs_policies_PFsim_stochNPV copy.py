@@ -53,8 +53,8 @@ budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 #I define a candidate array of size nr candidates with all ones
 candidatearray = np.ones(nrcandidates)
 
-#first simulation to get all cdfs for cost & benefits before optimization step
-mcs_results1 = simulate(candidatearray,1000)
+#first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
+mcs_results1 = simulate(candidatearray,100)
 
 #perform the point estimate of the cost (at each confidence level) and benefits of each project
 #and store the results in a matrix
@@ -109,7 +109,7 @@ for i in range(len(budgetting_confidence_policies)):
     print(bdgtperproject)
     npvperproject=npvperproject_matrix[:,i]
     print(npvperproject)
-    #I define the budget constraint #was 250k
+    #I define the budget constraint
     maxbdgt = 3800
     #execute the maximizer function to obtain the portfolio, and its npv and bdgt
     projectselection = maximize_npv()
