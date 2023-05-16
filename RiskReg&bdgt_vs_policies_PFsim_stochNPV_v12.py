@@ -41,7 +41,7 @@ iterations = 100
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 3800
-min_pf_conf = 0.95
+min_pf_conf = 0.90
 
 #defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
 tested_portfolios = []
@@ -230,18 +230,18 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
             total_npv += npvperproject[i]
             #total_npv += npv[i][1]
     if total_cost > maxbdgt or portfolio_confidence < min_pf_conf:
-        return 0,
-    return total_npv
+        return 0, 0
+    return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
 POPULATION_SIZE = 50 #was 100
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
 MAX_GENERATIONS = 100 #was 500 #was 200
-HALL_OF_FAME_SIZE = 1
+HALL_OF_FAME_SIZE = 3
 
-# Create the individual and population classes based on the list of attributes and the fitness function
-creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+# Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
+creator.create("FitnessMax", base.Fitness, weights=(100000.0, 1.0))
 # create the Individual class based on list
 creator.create("Individual", list, fitness=creator.FitnessMax)
 
@@ -300,10 +300,12 @@ def maximize_npv():
 
     #de momento me dejo de complicarme con el hall of fame y me quedo con el último individuo de la última generación
     # return the optimal portfolio from the hall of fame, their fitness and the total budget
-    #print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
-    return hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
-    #print(hall_of_fame)
+    # print(hall_of_fame)
     #return hall_of_fame
+    print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], hall_of_fame[0].fitness.values[1], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
+    print(hall_of_fame[1], hall_of_fame[1].fitness.values[0], hall_of_fame[1].fitness.values[1], portfolio_totalbudget(hall_of_fame[1], bdgtperproject_matrix))
+    print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], bdgtperproject_matrix))
+    return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
 
 # this function calculates the npv of each project and then uses the maximizer function to obtain and return portfolio, npv and bdgt in a matrix (solutions)
 for i in range(len(budgetting_confidence_policies)):
@@ -314,6 +316,9 @@ for i in range(len(budgetting_confidence_policies)):
     print(npvperproject)
     #execute the maximizer function to obtain the portfolio, and its npv and bdgt
     projectselection = maximize_npv()
+    #execute the maximizer function to obtain a Hall of Fame including at the rows the different chosen options, and in columns the portfolio, and its npv and bdgt
+
+   
     #assign the result from projectselection to the variable solutions
     solutions.append(projectselection)
     #print(solutions)
