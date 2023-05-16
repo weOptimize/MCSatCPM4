@@ -1,3 +1,5 @@
+#This file includes the function that returns the survival value for a given budgetting confidence policy.
+#It is called from the main file
 import math
 import random
 import numpy as np
@@ -11,15 +13,55 @@ from pandas_ods_reader import read_ods
 
 #import created scripts:
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
-from functions_for_simheuristic_12 import *
 
-mcs_costs = []
-mcs_NPV = []
+#I define the number of candidates to be considered
 nrcandidates = 10
 nr_confidence_policies = 1
+mcs_costs = []
+mcs_NPV = []
+maxbdgt = 3800
 #initialize matrices to store bdgt and npv
 bdgtperproject_matrix = np.zeros((nrcandidates, nr_confidence_policies))
 npvperproject_matrix = np.zeros((nrcandidates, nr_confidence_policies))
+
+
+#defining the function that calculates the total budget of a portfolio of projects
+def portfolio_totalbudget(portfolio,bdgtperproject):
+    totalbudget_portfolio = 0
+    #totalbudget_npv = 0
+    for i in range(nrcandidates):
+        if portfolio[i] == 1:
+            totalbudget_portfolio += bdgtperproject[i]
+            #totalbudget_npv += npvperproject[i]
+    #return totalbudget_portfolio, totalbudget_npv
+    return totalbudget_portfolio
+
+
+#define the function that returns the survival value for a given budgetting confidence policy
+def survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations):
+    #calculate the cumulative sum of the values of the histogram
+	valuesplus, base = np.histogram(sim_costs, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
+	cumulativeplus = np.cumsum(valuesplus)
+	survivalvalues = 100*(len(sim_costs)-cumulativeplus)/len(sim_costs)
+	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%
+	index = (np.abs(survivalvalues-100*(1-budgetting_confidence_policy))).argmin()
+	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
+	budgetedduration = np.round(base[index],2)
+	return budgetedduration
+    
+
+#define the function that returns the expected value for a given budgetting confidence policy
+def expected_value_extractor(sim_npv, iterations):
+	#calculate the cumulative sum of the values of the histogram
+	valuesplus, base = np.histogram(sim_npv, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
+	cumulativeplus = np.cumsum(valuesplus)
+	survivalvalues = 100*(len(sim_npv)-cumulativeplus)/len(sim_npv)
+	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%
+	index = (np.abs(survivalvalues-100*(1-.5))).argmin()
+	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
+	budgetedduration = np.round(base[index],2)
+	return budgetedduration
+
 
 
 def simulate(arrayforsim, iterat):
@@ -62,31 +104,6 @@ def simulate(arrayforsim, iterat):
             mcs_costs.append([])
             mcs_NPV.append([])
     return(mcs_costs, mcs_NPV)
-
-
-#define the function that returns the expected value for a given budgetting confidence policy
-def expected_value_extractor(sim_npv, iterations):
-	#calculate the cumulative sum of the values of the histogram
-	valuesplus, base = np.histogram(sim_npv, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
-	cumulativeplus = np.cumsum(valuesplus)
-	survivalvalues = 100*(len(sim_npv)-cumulativeplus)/len(sim_npv)
-	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%
-	index = (np.abs(survivalvalues-100*(1-.5))).argmin()
-	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
-	budgetedduration = np.round(base[index],2)
-	return budgetedduration
-
-#define the function that returns the survival value for a given budgetting confidence policy
-def survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations):
-    #calculate the cumulative sum of the values of the histogram
-	valuesplus, base = np.histogram(sim_costs, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
-	cumulativeplus = np.cumsum(valuesplus)
-	survivalvalues = 100*(len(sim_costs)-cumulativeplus)/len(sim_costs)
-	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%
-	index = (np.abs(survivalvalues-100*(1-budgetting_confidence_policy))).argmin()
-	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
-	budgetedduration = np.round(base[index],2)
-	return budgetedduration
 
 #compute the median of the NPV results
 def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies):

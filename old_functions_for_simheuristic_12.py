@@ -12,13 +12,13 @@ from pandas_ods_reader import read_ods
 
 
 #import created scripts:
-from task_rnd_triang_with_interrupts_stdev_new_R2 import *
-from simulate_function_mcs import *
+#from task_rnd_triang_with_interrupts_stdev_new_R2 import *
+#from simulate_function_mcs import *
 
 #I define the number of candidates to be considered
 nrcandidates = 10
 nr_confidence_policies = 1
-from RiskReg_bdgt_vs_policies_PFsim_stochNPV import maxbdgt, df10r, iterations
+from old.RiskReg_bdgt_vs_policies_PFsim_stochNPV import maxbdgt, df10r, iterations
 
 #initialize matrices to store bdgt and npv
 bdgtperproject_matrix = np.zeros((nrcandidates, nr_confidence_policies))
@@ -52,7 +52,7 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt, df10r, iteratio
             # add the net present value of the project to the total net present value of the portfolio
             total_npv += npvperproject[i]
             #total_npv += npv[i][1]
-    if total_cost > maxbdgt or portfolio_risk > 0.8:
+    if total_cost > maxbdgt: #or portfolio_risk > 0.8:
         return 0,
     return total_npv
 

@@ -2,6 +2,20 @@
 
 #* get execution time 
 import time
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from pandas_ods_reader import read_ods
+from operator import itemgetter
+import matplotlib.pyplot as plt 
+from scipy import stats as st
+from copulas.multivariate import GaussianMultivariate
+from scipy.stats import rv_continuous, rv_histogram, norm, uniform, multivariate_normal, beta
+from fitter import Fitter, get_common_distributions, get_distributions
+
+#import created scripts:
+from task_rnd_triang_with_interrupts_stdev_new_R2 import *
+from functions_for_simheuristic_v12 import *
 
 start_time = time.time()
 
@@ -20,26 +34,13 @@ mcs_results2 = []
 
 #*****
 
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from pandas_ods_reader import read_ods
-from operator import itemgetter
-import matplotlib.pyplot as plt 
-from scipy import stats as st
-from copulas.multivariate import GaussianMultivariate
-from scipy.stats import rv_continuous, rv_histogram, norm, uniform, multivariate_normal, beta
-from fitter import Fitter, get_common_distributions, get_distributions
 
-
-#import created scripts:
-from task_rnd_triang_with_interrupts_stdev_new_R2 import *
-from functions_for_simheuristic_12 import *
-from simulate_function_mcs import *
-
-
-#I define the number of candidates to be considered
+#I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 10
+iterations = 100
+
+#I define the budget constraint
+maxbdgt = 3800
 
 #defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
 tested_portfolios = []
@@ -53,7 +54,6 @@ budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 
 #I define a candidate array of size nr candidates with all ones
 candidatearray = np.ones(nrcandidates)
-iterations = 100
 
 #first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
 mcs_results1 = simulate(candidatearray,iterations)
@@ -97,7 +97,6 @@ for i in range(nrcandidates):
 
 
 print(betaparams)
-
 
 # copy the array with all MCS results
 df0 = pd.DataFrame(data=mcs_results1[0]).T
@@ -190,10 +189,111 @@ df10r[8] = rand_P9
 df10r[9] = rand_P10
 df10r.rename(columns={0:"P01", 1:"P02", 2:"P03", 3:"P04", 4:"P05", 5:"P06", 6:"P07", 7:"P08", 8:"P09", 9:"P10"}, inplace=True)
 correlation_matrix1 = df10r.corr()
-#record df10r as a csv file
-#df10r.to_csv('df10r.csv', index=False)
 
+# Defining the fitness function
+def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
+    total_cost = 0
+    total_npv = 0
+    #multiply dataframe 10r by the chosen portfolio to reflect the effect of the projects that are chosen
+    pf_df10r = df10r * individual
+    #sum the rows of the new dataframe to calculate the total cost of the portfolio
+    pf_cost10r = pf_df10r.sum(axis=1)
+    #extract the maximum of the resulting costs
+    maxcost10r = max(pf_cost10r)
+    #print("max cost:")
+    #print(maxcost10r)
+    #count how many results were higher than maxbdgt
+    count = 0
+    for i in range(pf_cost10r.__len__()):
+        if pf_cost10r[i] > maxbdgt:
+            count = count + 1
+    #array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
+    portfolio_confidence = 1-count/iterations
+    #print("portfolio confidence:")
+    #print(portfolio_confidence)
+    for i in range(nrcandidates):
+        #print(total_cost)
+        if individual[i] == 1:
+            total_cost += bdgtperproject[i]
+            #total_cost += PROJECTS[i][0]
+            # add the net present value of the project to the total net present value of the portfolio
+            total_npv += npvperproject[i]
+            #total_npv += npv[i][1]
+    if total_cost > maxbdgt or portfolio_confidence < 0.9:
+        return 0,
+    return total_npv
 
+# Define the genetic algorithm parameters
+POPULATION_SIZE = 50 #was 100
+P_CROSSOVER = 0.9
+P_MUTATION = 0.1
+MAX_GENERATIONS = 100 #was 500 #was 200
+HALL_OF_FAME_SIZE = 1
+
+# Create the individual and population classes based on the list of attributes and the fitness function
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+# create the Individual class based on list
+creator.create("Individual", list, fitness=creator.FitnessMax)
+
+# Define the toolbox
+toolbox = base.Toolbox()
+# register a function to generate random integers (0 or 1) for each attribute/gene in an individual
+toolbox.register("attr_bool", random.randint, 0, 1)
+# register a function to generate individuals (which are lists of several -nrcandidates- 0s and 1s -genes-
+# that represent the projects to be included in the portfolio)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, nrcandidates)
+# register a function to generate a population (a list of individuals -candidate portfolios-)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+# register the goal / fitness function
+toolbox.register("evaluate", evaluate, bdgtperproject=bdgtperproject_matrix, npvperproject=npvperproject_matrix, maxbdgt=maxbdgt)
+# register the crossover operator (cxTwoPoint) with a probability of 0.9 (defined above)
+toolbox.register("mate", tools.cxTwoPoint)
+# register a mutation operator with a probability to flip each attribute/gene of 0.05.
+# indpb is the independent probability for each gene to be flipped and P_MUTATION is the probability of mutating an individual
+# The difference between P_MUTATION and indpb is that P_MUTATION determines whether an individual will be mutated or not,
+# while indpb determines how much an individual will be mutated if it is selected for mutation.
+toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+# operator for selecting individuals for breeding the next
+# generation: each individual of the current generation
+# is replaced by the 'fittest' (best) of three individuals
+# drawn randomly from the current generation.
+toolbox.register("select", tools.selTournament, tournsize=3)
+
+# Define the hall of fame
+hall_of_fame = tools.HallOfFame(HALL_OF_FAME_SIZE)
+
+# Define the statistics
+stats = tools.Statistics(lambda ind: ind.fitness.values)
+stats.register("max", max)
+
+# defining the function that maximizes the net present value of a portfolio of projects, while respecting the budget constraint (using a genetic algorithm)
+def maximize_npv():
+    # Empty the hall of fame
+    hall_of_fame.clear()
+    print("****************new policy iteration****************")
+    # Initialize the population
+    population = toolbox.population(n=POPULATION_SIZE)
+    for generation in range(MAX_GENERATIONS):
+        # Vary the population
+        offspring = algorithms.varAnd(population, toolbox, cxpb=P_CROSSOVER, mutpb=P_MUTATION)
+        # Evaluate the new individuals fitnesses
+        fits = toolbox.map(toolbox.evaluate, offspring)
+        for fit, ind in zip(fits, offspring):
+            ind.fitness.values = fit
+        # Update the hall of fame with the generated individuals
+        hall_of_fame.update(offspring)
+        # reorder the hall of fame so that the highest fitness individual is first
+        # hall_of_fame.sort(key=itemgetter(0), reverse=True)
+        population = toolbox.select(offspring, k=len(population))    
+        record = stats.compile(population)
+        print(f"Generation {generation}: Max NPV = {record['max']}")
+
+    #de momento me dejo de complicarme con el hall of fame y me quedo con el último individuo de la última generación
+    # return the optimal portfolio from the hall of fame, their fitness and the total budget
+    #print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
+    return hall_of_fame[0], hall_of_fame[0].fitness.values[0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
+    #print(hall_of_fame)
+    #return hall_of_fame
 
 # this function calculates the npv of each project and then uses the maximizer function to obtain and return portfolio, npv and bdgt in a matrix (solutions)
 for i in range(len(budgetting_confidence_policies)):
@@ -202,8 +302,6 @@ for i in range(len(budgetting_confidence_policies)):
     print(bdgtperproject)
     npvperproject=npvperproject_matrix[:,i]
     print(npvperproject)
-    #I define the budget constraint
-    maxbdgt = 3800
     #execute the maximizer function to obtain the portfolio, and its npv and bdgt
     projectselection = maximize_npv()
     #assign the result from projectselection to the variable solutions
@@ -321,6 +419,24 @@ portfolio_risk[0] = (1-count/iterations)
 # Correlation matrix to be used in the next mcs simulation
 #cm103 = np.full((10, 10), 0.3)
 #np.fill_diagonal(cm103, 1)
+
+
+#multiply dataframe 10r by the chosen portfolio to reflect the effect of the projects that are chosen
+pf_df10r = df10r * chosen_portfolio
+#sum the rows of the new dataframe to calculate the total cost of the portfolio
+pf_cost10r = pf_df10r.sum(axis=1)
+
+#extract the maximum of the resulting costs
+maxcost10r = max(pf_cost10r)
+print("max cost:")
+print(maxcost10r)
+#count how many results were higher than maxbdgt
+count = 0
+for i in range(pf_cost10r.__len__()):
+    if pf_cost10r[i] > maxbdgt:
+        count = count + 1
+#array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
+portfolio_risk[4] = 1-count/iterations
 
 #*** execution time
 print("Execution time: %s milli-seconds" %((time.time() - start_time)* 1000))
