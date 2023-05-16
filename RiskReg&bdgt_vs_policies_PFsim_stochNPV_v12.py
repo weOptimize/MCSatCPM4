@@ -39,8 +39,9 @@ mcs_results2 = []
 nrcandidates = 10
 iterations = 100
 
-#I define the budget constraint
+#I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 3800
+min_pf_conf = 0.95
 
 #defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
 tested_portfolios = []
@@ -63,8 +64,17 @@ mcs_results1 = simulate(candidatearray,iterations)
 #initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
 #print(mcs_results1[0])
 #print(mcs_results1[1])
+# mcs_results1[0] corresponds to the project costs and mcs_results1[1] to the project benefits (NPV)
 x_perproj_matrix = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies)
 print(x_perproj_matrix)
+# sum the costs of all projects to get the total cost of the portfolio if choosing all projects
+totalcost = np.sum(x_perproj_matrix[0])
+
+
+print("total portfolio cost allocation request:")
+print(totalcost)
+
+
 
 
 #check the parameters of beta distribution for each of the mcs_results
@@ -219,7 +229,7 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
             # add the net present value of the project to the total net present value of the portfolio
             total_npv += npvperproject[i]
             #total_npv += npv[i][1]
-    if total_cost > maxbdgt or portfolio_confidence < 0.9:
+    if total_cost > maxbdgt or portfolio_confidence < min_pf_conf:
         return 0,
     return total_npv
 
