@@ -305,7 +305,8 @@ def maximize_npv():
     print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], hall_of_fame[0].fitness.values[1], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
     print(hall_of_fame[1], hall_of_fame[1].fitness.values[0], hall_of_fame[1].fitness.values[1], portfolio_totalbudget(hall_of_fame[1], bdgtperproject_matrix))
     print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], bdgtperproject_matrix))
-    return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
+    #return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
+    return hall_of_fame
 
 # this function calculates the npv of each project and then uses the maximizer function to obtain and return portfolio, npv and bdgt in a matrix (solutions)
 for i in range(len(budgetting_confidence_policies)):
@@ -316,24 +317,37 @@ for i in range(len(budgetting_confidence_policies)):
     print(npvperproject)
     #execute the maximizer function to obtain the portfolio, and its npv and bdgt
     projectselection = maximize_npv()
-    #execute the maximizer function to obtain a Hall of Fame including at the rows the different chosen options, and in columns the portfolio, and its npv and bdgt
-
-   
     #assign the result from projectselection to the variable solutions
     solutions.append(projectselection)
     #print(solutions)
+# lately I only had one BCP, si it has performed the append only once, however as the solution is a hall of fame, it has appended a list of 3 individuals
 
-#separate the npv results from the solutions list
-npv_results = [round(x[1], 0) for x in solutions]
+#separate the npv results of all individuals from the solutions list
+npv_results = [x[0].fitness.values[0][0] for x in solutions]
 #separate the portfolio results from the solutions list
 portfolio_results = [x[0] for x in solutions]
+#separate the portfolio confidence levels from the solutions list
+portfolio_confidence_levels = [x[0].fitness.values[1] for x in solutions]
+#separate the budgets taken from the solutions list
+budgets = [portfolio_totalbudget(x[0], bdgtperproject_matrix)[0] for x in solutions]
+
+
+#separate the npv results from the solutions list
+#npv_results = [round(x[1][0], 0) for x in solutions]
+#separate the portfolio results from the solutions list
+#portfolio_results = [x[0] for x in solutions]
 #separate the budgets taken from the solutions list (was budgets = [x[2][0] for x in solutions] -> [0] PARA CUANDO SEA SOLO UN BCP
-budgets = [x[2][0] for x in solutions]
+#budgets = [x[2][0] for x in solutions]
 
 #print for debugging
+print("npv_results:")
 print(npv_results)
+print("portfolio_results:")
 print(portfolio_results)
+print("budgets:")
 print(budgets)
+print("portfolio_confidence_levels:")
+print(portfolio_confidence_levels)
 
 #DESACTIVAR ALL THIS SI QUIERES MIRAR TODOS JUNTOS - HASTA PLT(SHOW)
 plt.figure(1)
