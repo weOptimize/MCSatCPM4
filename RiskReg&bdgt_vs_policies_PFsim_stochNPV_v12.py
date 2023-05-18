@@ -31,6 +31,12 @@ solutions = []
 mcs_results = []
 mcs_results1 = []
 mcs_results2 = []
+#defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
+tested_portfolios = []
+solution_portfolios = []
+
+#defining the correlation matrix to be used in the monte carlo simulation (and as check when the correlations are expected to be 0)
+correlation_matrix = []
 
 #*****
 
@@ -38,17 +44,11 @@ mcs_results2 = []
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 10
 iterations = 100
+iterations_finalMCS = 5000
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 3800
 min_pf_conf = 0.90
-
-#defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
-tested_portfolios = []
-solution_portfolios = []
-
-#defining the correlation matrix to be used in the monte carlo simulation (and as check when the correlations are expected to be 0)
-correlation_matrix = []
 
 #initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
 budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
@@ -58,6 +58,7 @@ candidatearray = np.ones(nrcandidates)
 
 #first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
 mcs_results1 = simulate(candidatearray,iterations)
+print("mcs results1: ", mcs_results1[0])
 
 #perform the point estimate of the cost (at each confidence level) and benefits of each project
 #and store the results in a matrix
@@ -65,10 +66,10 @@ mcs_results1 = simulate(candidatearray,iterations)
 #print(mcs_results1[0])
 #print(mcs_results1[1])
 # mcs_results1[0] corresponds to the project costs and mcs_results1[1] to the project benefits (NPV)
-x_perproj_matrix = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies)
-print(x_perproj_matrix)
+x_perproj_matrix1 = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies)
+print("x_perproj_matrix1: ", x_perproj_matrix1)
 # sum the costs of all projects to get the total cost of the portfolio if choosing all projects
-totalcost = np.sum(x_perproj_matrix[0])
+totalcost = np.sum(x_perproj_matrix1[0])
 
 
 print("total portfolio cost allocation request:")
@@ -237,7 +238,7 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
 POPULATION_SIZE = 50 #was 100
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
-MAX_GENERATIONS = 100 #was 500 #was 200
+MAX_GENERATIONS = 50 #was 500 #was 200
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -322,14 +323,65 @@ for i in range(len(budgetting_confidence_policies)):
     #print(solutions)
 # lately I only had one BCP, si it has performed the append only once, however as the solution is a hall of fame, it has appended a list of 3 individuals
 
-#separate the npv results of all individuals from the solutions list
-npv_results = [x[0].fitness.values[0][0] for x in solutions]
-#separate the portfolio results from the solutions list
-portfolio_results = [x[0] for x in solutions]
-#separate the portfolio confidence levels from the solutions list
-portfolio_confidence_levels = [x[0].fitness.values[1] for x in solutions]
-#separate the budgets taken from the solutions list
-budgets = [portfolio_totalbudget(x[0], bdgtperproject_matrix)[0] for x in solutions]
+#store the npv results, portfolio results, portfolio confidence levels and budgets taken in different lists
+npv_results = [0] * len(projectselection)
+portfolio_results = [0] * len(projectselection)
+portfolio_confidence_levels = [0] * len(projectselection)
+budgets = [0] * len(projectselection)
+for i in range(len(projectselection)):
+    npv_results = [[x[i].fitness.values[0][0] for x in solutions] for i in range(len(projectselection))]
+    #portfolio_results = [[x[i] for x in solutions] for i in range(len(projectselection))]
+    portfolio_confidence_levels = [[x[i].fitness.values[1] for x in solutions] for i in range(len(projectselection))]
+    budgets = [[portfolio_totalbudget(x[i], bdgtperproject_matrix)[0] for x in solutions] for i in range(len(projectselection))]
+
+# take all arrays inside portfolio_results and sum all of them
+portfolio_projection = [sum(x) for x in zip(*projectselection)]
+
+# convert portfolio_projection array into a binary array, where 1 means that the project is selected and 0 means that it is not
+portfolio_projection = [1 if x > 0 else 0 for x in portfolio_projection]
+
+# convert portfolio_projection in a full ones array
+# portfolio_projection = [1] * len(portfolio_projection)
+
+print ("npv_results: ", npv_results)
+print ("portfolio_results: ", projectselection)
+print ("portfolio_confidence_levels: ", portfolio_confidence_levels)
+print ("budgets: ", budgets)
+print ("portfolio_projection: ", portfolio_projection)
+
+#second simulation to get all cdfs for cost & benefits after optimization step (may_update: was 1000)
+mcs_results2 = simulate(portfolio_projection,iterations_finalMCS)
+
+# mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
+x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies)
+print("x_perproj_matrix2: ", x_perproj_matrix2)
+# separate the budget and npv results from the x_perproj_matrix
+bdgtperproject_matrix = x_perproj_matrix2[0]
+npvperproject_matrix = x_perproj_matrix2[1]
+#print(type(bdgtperproject_matrix))
+#print(type(npvperproject_matrix))
+bdgtperproject_matrix = np.squeeze(bdgtperproject_matrix)
+npvperproject_matrix = np.squeeze(npvperproject_matrix)
+print(bdgtperproject_matrix)
+print(npvperproject_matrix)
+
+# for each of the options obtained in projectselection, calculate the total portfolio npv and the portfolio budget based on the information from x_perproj_matrix
+npv_results = [0] * len(projectselection)
+budgets = [0] * len(projectselection)
+for i in range(len(projectselection)):
+    #calculate the total portfolio budget by multiplying the budget of each project by the binary array obtained in projectselection    
+    print(projectselection[i])
+    budgets[i] = np.sum(np.multiply(bdgtperproject_matrix,projectselection[i]))
+    #calculate the total portfolio npv by multiplying the npv of each project by the binary array obtained in projectselection
+    npv_results[i] = np.sum(np.multiply(npvperproject_matrix,projectselection[i]))
+
+# create a dataframe with the results
+finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_results, 'Portfolio Budget': budgets})
+# order the dataframe by the portfolio npv, starting with the highest npv
+finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
+
+print ("Final Solution: ", finalsol_df)
+
 
 
 #separate the npv results from the solutions list
@@ -338,16 +390,6 @@ budgets = [portfolio_totalbudget(x[0], bdgtperproject_matrix)[0] for x in soluti
 #portfolio_results = [x[0] for x in solutions]
 #separate the budgets taken from the solutions list (was budgets = [x[2][0] for x in solutions] -> [0] PARA CUANDO SEA SOLO UN BCP
 #budgets = [x[2][0] for x in solutions]
-
-#print for debugging
-print("npv_results:")
-print(npv_results)
-print("portfolio_results:")
-print(portfolio_results)
-print("budgets:")
-print(budgets)
-print("portfolio_confidence_levels:")
-print(portfolio_confidence_levels)
 
 #DESACTIVAR ALL THIS SI QUIERES MIRAR TODOS JUNTOS - HASTA PLT(SHOW)
 plt.figure(1)
@@ -384,9 +426,6 @@ for i, budget in enumerate(budgets):
 plt.text(nrcandidates + 2, len(budgetting_confidence_policies) / 2, "Portfolio Budget", ha='center', va='center', rotation=270, fontsize=14)
 plt.tight_layout()
 
-
-
-
 #extract the sixth portfolio included in array portfolio_results (RESTORE TO SIX WHEN MORE THAN ONE BCP!!!!!!!!!!!!!)
 chosen_portfolio = portfolio_results[0]
 #multiply dataframe 0 by the chosen portfolio to reflect the effect of the projects that are chosen
@@ -417,7 +456,6 @@ ax.grid(axis='x')
 ax.legend(loc='center left')
 ax2.legend(loc='upper left')
 
-#iterations=100
 
 
 #plot the histogram of the resulting costs

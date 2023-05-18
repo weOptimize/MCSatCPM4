@@ -52,7 +52,7 @@ def survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations
 
 #define the function that returns the expected value for a given budgetting confidence policy
 def expected_value_extractor(sim_npv, iterations):
-	#calculate the cumulative sum of the values of the histogram
+    #calculate the cumulative sum of the values of the histogram
 	valuesplus, base = np.histogram(sim_npv, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
 	cumulativeplus = np.cumsum(valuesplus)
 	survivalvalues = 100*(len(sim_npv)-cumulativeplus)/len(sim_npv)
@@ -65,6 +65,9 @@ def expected_value_extractor(sim_npv, iterations):
 
 
 def simulate(arrayforsim, iterat):
+    #initialize the arrays that will store the results of the MonteCarlo Simulation
+    mcs_costs = []
+    mcs_NPV = []
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
@@ -101,14 +104,20 @@ def simulate(arrayforsim, iterat):
             #compute the median of the NPV results
             median_npv = expected_value_extractor(sim_NPV, iterat)
         else:
-            mcs_costs.append([])
-            mcs_NPV.append([])
+            #if the value i is 0, then the simulation is not performed and the appended results an array full of zeros
+            mcs_NPV.append([0.0])   
+            mcs_costs.append(np.zeros(iterat))
+         
+            
+
+    #print ("mcs_costs", mcs_costs)
+    #print ("mcs_NPV", mcs_NPV)
     return(mcs_costs, mcs_NPV)
 
 #compute the median of the NPV results
 def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies):
     for i in range(nrcandidates):
-        median_npv = expected_value_extractor(mcs_NPV[i], len(mcs_NPV[i]))
+        median_npv = round(expected_value_extractor(mcs_NPV[i], len(mcs_NPV[i])),0)
         for j in range(len(budgetting_confidence_policies)):
             budgetting_confidence_policy = budgetting_confidence_policies[j]
             #extract the survival value from the array sim_duration that corresponds to the budgetting confidence policy

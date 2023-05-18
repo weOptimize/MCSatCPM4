@@ -249,7 +249,7 @@ def MCS_NPV(cashflows, iterations):
 		wacc = np.random.normal(0.1,0.06)
 		#convert cashflows into a numpy array
 		cashflows = np.array(cashflows)
-		#substitute the cashflows stored by a stochastic variable that follows a normal distribution with mean equal to the cashflow and standard deviation equal to the cashflow*0.3
+		#substitute the cashflows stored by a stochastic variable that follows a normal distribution with mean equal to the cashflow and standard deviation equal to the cashflow*0.2
 		stochcashflows = np.random.normal(cashflows, cashflows*0.2)
 		# transpose the array
 		stochcashflows = stochcashflows.T
