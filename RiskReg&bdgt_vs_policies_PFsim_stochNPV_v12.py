@@ -34,6 +34,8 @@ mcs_results2 = []
 #defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
 tested_portfolios = []
 solution_portfolios = []
+npv_results = []
+budgets = []
 
 #defining the correlation matrix to be used in the monte carlo simulation (and as check when the correlations are expected to be 0)
 correlation_matrix = []
@@ -43,8 +45,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 10
-iterations = 100
-iterations_finalMCS = 5000
+iterations = 60
+iterations_finalMCS = 200
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 3800
@@ -58,7 +60,7 @@ candidatearray = np.ones(nrcandidates)
 
 #first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
 mcs_results1 = simulate(candidatearray,iterations)
-print("mcs results1: ", mcs_results1[0])
+#print("mcs results1: ", mcs_results1[0])
 
 #perform the point estimate of the cost (at each confidence level) and benefits of each project
 #and store the results in a matrix
@@ -379,8 +381,21 @@ for i in range(len(projectselection)):
 finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_results, 'Portfolio Budget': budgets})
 # order the dataframe by the portfolio npv, starting with the highest npv
 finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
-
 print ("Final Solution: ", finalsol_df)
+
+npv_results = []
+budgets = []
+#from the sorted dataframe, take the first row, which corresponds to the highest npv portfolio and extract the data needed for the following pictures
+finalsol_df = finalsol_df.iloc[0]
+portfolio_results = finalsol_df[0]
+npv_results_escalar = finalsol_df[1]
+npv_results.append(npv_results_escalar)
+budgets_escalar = finalsol_df[2]
+budgets.append(budgets_escalar)
+print("portfolio_results: ", portfolio_results)
+print("npv_results: ", npv_results)
+print("budgets: ", budgets)
+
 
 
 
@@ -392,6 +407,7 @@ print ("Final Solution: ", finalsol_df)
 #budgets = [x[2][0] for x in solutions]
 
 #DESACTIVAR ALL THIS SI QUIERES MIRAR TODOS JUNTOS - HASTA PLT(SHOW)
+#represent in a scatter plot the results of optimal npv extracted from dataframe finalsol_df vs budgetting confidence policy
 plt.figure(1)
 plt.scatter(budgetting_confidence_policies, npv_results, color='grey')
 #zoom in the plot so that the minumum value of the x axis is 0.5 and the maximum value of the x axis is 1
@@ -409,16 +425,16 @@ plt.grid()
 #plt.show()
 
 # create a square array with the information included in portfolio_results
-solution_portfolios = np.array(portfolio_results)
+#solution_portfolios = np.array(portfolio_results)
 # plot the square array as a heatmap
 #plt.figure(2)
-fig, ax = plt.subplots()
-plt.imshow(solution_portfolios, cmap='binary', interpolation='nearest', vmin=0, vmax=1)
-plt.xlabel("Project", fontsize=12)
-plt.ylabel("Budgetting Confidence Policy", fontsize=14)
-plt.yticks(range(len(budgetting_confidence_policies)), budgetting_confidence_policies, fontsize=12)
-plt.xticks(np.arange(0, nrcandidates, 1), fontsize=12)
-plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=True)
+#fig, ax = plt.subplots()
+#plt.imshow(solution_portfolios, cmap='binary', interpolation='nearest', vmin=0, vmax=1)
+#plt.xlabel("Project", fontsize=12)
+#plt.ylabel("Budgetting Confidence Policy", fontsize=14)
+#plt.yticks(range(len(budgetting_confidence_policies)), budgetting_confidence_policies, fontsize=12)
+#plt.xticks(np.arange(0, nrcandidates, 1), fontsize=12)
+#plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=True)
 
 for i, budget in enumerate(budgets):
     plt.text(nrcandidates + 0.5, i, "${:.2f}".format(budget), ha='left', va='center', fontsize=14)
@@ -437,7 +453,7 @@ fig, ax = plt.subplots()
 # title of the plot
 # ax.set_title('Monte Carlo Simulation of a candidate project')
 # Plot the histogram of the monte carlo simulation of the first project
-ax.hist(mcs_results1[0][0], bins=200, color='grey', label='Histogram')
+ax.hist(mcs_results2[0][0], bins=200, color='grey', label='Histogram')
 # title of the x axis
 ax.set_xlabel('Cost in k€')
 # Create a twin Axes object that shares the x-axis of the original Axes object
