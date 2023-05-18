@@ -160,7 +160,7 @@ def correlatedMCS(mcs_results, iterat):
         scale.append(betaparams[i][3])
 
 
-    print(betaparams)
+    # print(betaparams)
 
     # copy the array with all MCS results
     df0 = pd.DataFrame(data=mcs_results[0]).T
@@ -185,8 +185,8 @@ def correlatedMCS(mcs_results, iterat):
     # Ensure the diagonals are equal to 1
     for i in range(10):
         cm10r[i, i] = 1
-    print('cm10r:')
-    print(cm10r)
+    #print('cm10r:')
+    #print(cm10r)
 
     #initialize dataframe df10r with size nrcandidates x iterations
     df10r = pd.DataFrame(np.zeros((iterat, nrcandidates)))
@@ -236,10 +236,10 @@ def correlatedMCS(mcs_results, iterat):
     rand_P10 = d_P10.ppf(rand_U[:, 9])
     # final correlation structure after applying a copula
     c_after = np.corrcoef([rand_P1, rand_P2, rand_P3, rand_P4, rand_P5, rand_P6, rand_P7, rand_P8, rand_P9, rand_P10])
-    print("Correlation matrix before applying a copula:")
-    print(c_before)
-    print("Correlation matrix after applying a copula:")
-    print(c_after)
+    #print("Correlation matrix before applying a copula:")
+    #print(c_before)
+    #print("Correlation matrix after applying a copula:")
+    #print(c_after)
     # step 5: store the N random variates in the dataframe
     df10r[0] = rand_P1
     df10r[1] = rand_P2
