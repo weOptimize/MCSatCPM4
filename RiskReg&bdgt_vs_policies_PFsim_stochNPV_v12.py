@@ -114,10 +114,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 30 #was 100 #was 50
+POPULATION_SIZE = 50 #was 100 
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
-MAX_GENERATIONS = 60 #was 500 #was 200 #was 100
+MAX_GENERATIONS = 100 #was 500 #was 200 #was 100
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -183,9 +183,11 @@ def maximize_npv():
     # print(hall_of_fame)
     #return hall_of_fame
     print("Hall of Fame:")
-    print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], hall_of_fame[0].fitness.values[1], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
-    print(hall_of_fame[1], hall_of_fame[1].fitness.values[0], hall_of_fame[1].fitness.values[1], portfolio_totalbudget(hall_of_fame[1], bdgtperproject_matrix))
-    print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], bdgtperproject_matrix))
+    for i in range(HALL_OF_FAME_SIZE):
+        print(hall_of_fame[i], hall_of_fame[i].fitness.values[0], hall_of_fame[i].fitness.values[1], portfolio_totalbudget(hall_of_fame[i], bdgtperproject_matrix))
+    #print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], hall_of_fame[0].fitness.values[1], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
+    #print(hall_of_fame[1], hall_of_fame[1].fitness.values[0], hall_of_fame[1].fitness.values[1], portfolio_totalbudget(hall_of_fame[1], bdgtperproject_matrix))
+    #print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], bdgtperproject_matrix))
     #return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
     return hall_of_fame
 
@@ -351,7 +353,7 @@ for i, budget in enumerate(budgets):
     plt.text(nrcandidates + 0.5, i, "${:.2f}".format(budget), ha='left', va='center', fontsize=14)
 
 plt.text(nrcandidates + 2, len(budgetting_confidence_policies) / 2, "Portfolio Budget", ha='center', va='center', rotation=270, fontsize=14)
-plt.tight_layout()
+#plt.tight_layout()
 
 #extract the sixth portfolio included in array portfolio_results (RESTORE TO SIX WHEN MORE THAN ONE BCP!!!!!!!!!!!!!)
 chosen_portfolio = portfolio_results[0]
