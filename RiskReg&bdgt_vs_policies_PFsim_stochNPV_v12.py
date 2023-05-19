@@ -77,7 +77,7 @@ totalcost = np.sum(x_perproj_matrix1[0])
 print("total portfolio cost allocation request (without correlations because it is a request):")
 print(totalcost)
 
-df10r = correlatedMCS(mcs_results1, iterations)
+df10r = correlatedMCS(mcs_results1, iterations, nrcandidates)
 
 
 # Defining the fitness function
@@ -261,7 +261,7 @@ print(npvperproject_matrix)
 npv_results = [0] * len(projectselection)
 budgets = [0] * len(projectselection)
 pf_conf2 = [0] * len(projectselection)
-df20r = correlatedMCS(mcs_results2, iterations_finalMCS)
+df20r = correlatedMCS(mcs_results2, iterations_finalMCS, nrcandidates)
 for i in range(len(projectselection)):
     #calculate the total portfolio budget by multiplying the budget of each project by the binary array obtained in projectselection    
     print(projectselection[i])
