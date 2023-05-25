@@ -9,6 +9,7 @@ from pandas_ods_reader import read_ods
 from operator import itemgetter
 import matplotlib.pyplot as plt 
 from scipy import stats as st
+from deap import base, creator, tools, algorithms
 #from copulas.multivariate import GaussianMultivariate
 #from scipy.stats import rv_continuous, rv_histogram, norm, uniform, multivariate_normal, beta
 #from fitter import Fitter, get_common_distributions, get_distributions
@@ -44,12 +45,12 @@ correlation_matrix = []
 
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
-nrcandidates = 10
+nrcandidates = 20
 iterations = 100
 iterations_finalMCS = 2000
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
-maxbdgt = 3800
+maxbdgt = 10800
 min_pf_conf = 0.90
 
 #initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
@@ -118,7 +119,7 @@ POPULATION_SIZE = 50 #was 100
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
 MAX_GENERATIONS = 100 #was 500 #was 200 #was 100
-HALL_OF_FAME_SIZE = 3
+HALL_OF_FAME_SIZE = 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
 creator.create("FitnessMax", base.Fitness, weights=(100000.0, 1.0))
@@ -366,13 +367,13 @@ fig, ax = plt.subplots()
 # title of the plot
 # ax.set_title('Monte Carlo Simulation of a candidate project')
 # Plot the histogram of the monte carlo simulation of the first project
-ax.hist(mcs_results2[0][0], bins=200, color='grey', label='Histogram')
+ax.hist(mcs_results2[0][4], bins=200, color='grey', label='Histogram')
 # title of the x axis
 ax.set_xlabel('Cost in k€')
 # Create a twin Axes object that shares the x-axis of the original Axes object
 ax2 = ax.twinx()
 # Plot the histogram of the monte carlo simulation of the first project in the form of a cumulative distribution function
-ax2.hist(mcs_results1[0][0], bins=200, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
+ax2.hist(mcs_results2[0][4], bins=200, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
 # Set the y-axis of the twin Axes object to be visible
 ax2.yaxis.set_visible(True)
 #set maximum value of the y axis of the twin Axes object to 1

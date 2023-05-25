@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import random as rnd
 import matplotlib.pyplot as plt
-from deap import base, creator, tools, algorithms
 from operator import itemgetter
 from pandas_ods_reader import read_ods
 from copulas.multivariate import GaussianMultivariate
@@ -17,7 +16,7 @@ from fitter import Fitter, get_common_distributions, get_distributions
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 
 #I define the number of candidates to be considered
-nrcandidates = 10
+nrcandidates = 20
 nr_confidence_policies = 1
 mcs_costs = []
 mcs_NPV = []
@@ -73,14 +72,23 @@ def simulate(arrayforsim, iterat):
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
-            #open ten different ODS files and store the results in a list after computing the CPM and MCS
-            filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"
+            # open ten different ODS files and store the results in a list after computing the CPM and MCS 
+            # (restore to only last line if old version)
+            if i < 9:
+                filename = "RND_Schedules/data_wb0" + str(i+1) + ".ods"
+            else:
+                filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"  
             #print(filename)
-            mydata = read_ods(filename, "Sheet1")
-            #open ten different ODS files and store the results in a list after computing the CPM and MCS
-            filename = "RND_Schedules/riskreg_" + str(i+1) + ".ods"
+            mydata = read_ods(filename, 1)
+            # open ten different ODS files and store the results in a list after computing the CPM and MCS 
+            # (restore to only last line if old version)
+            if i < 9:
+                filename = "RND_Schedules/riskreg_0" + str(i+1) + ".ods"
+            else:
+                filename = "RND_Schedules/riskreg_" + str(i+1) + ".ods"
             #print(filename)
-            myriskreg = read_ods(filename, "riskreg")
+            myriskreg = read_ods(filename, 1) # was myriskreg = read_ods(filename, "Sheet1")
+
             #compute MonteCarlo Simulation and store the results in an array called "sim1_costs"
             sim_costs = MCS_CPM_RR(mydata, myriskreg, iterat)
             cashflows = []
@@ -126,7 +134,7 @@ def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies):
             survival_value = survival_value_extractor(mcs_costs[i], budgetting_confidence_policy, len(mcs_costs[i]))
             #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
             bdgtperproject_matrix[i][j]=survival_value
-            npvperproject_matrix[i][j]=median_npv-survival_value
+            npvperproject_matrix[i][j]=median_npv/1000-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
     return(bdgtperproject_matrix, npvperproject_matrix)
 
 # modify MCS results to reflect the correlation matrix  
