@@ -46,8 +46,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 100
-iterations_finalMCS = 2000
+iterations = 10
+iterations_finalMCS = 200
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -58,6 +58,8 @@ budgetedcosts = np.zeros((nrcandidates, len(budgetting_confidence_policies)))
 
 #I define a candidate array of size nr candidates with all ones
 candidatearray = np.ones(nrcandidates)
+#I define an initial array of indexes with all candidates ranging from 0 to nrcandidates-1
+initial_projection_indexes = np.arange(nrcandidates)
 
 #first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
 mcs_results1 = simulate(candidatearray,iterations)
@@ -69,7 +71,13 @@ mcs_results1 = simulate(candidatearray,iterations)
 #print(mcs_results1[0])
 #print(mcs_results1[1])
 # mcs_results1[0] corresponds to the project costs and mcs_results1[1] to the project benefits (NPV)
-x_perproj_matrix1 = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies)
+x_perproj_matrix1 = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies, nrcandidates)
+# extract first column of the matrix to get the budgeted costs of each project and store it in bdgtperproject_matrix
+bdgtperproject_matrix = x_perproj_matrix1[0]
+# extract second column of the matrix to get the NPV of each project and store it in npvperproject_matrix
+npvperproject_matrix = x_perproj_matrix1[1]
+# print("bdgtperproject_matrix at MAIN: ", bdgtperproject_matrix)
+# print("npvperproject_matrix at MAIN: ", npvperproject_matrix)
 # print("x_perproj_matrix1: ", x_perproj_matrix1)
 # sum the costs of all projects to get the total cost of the portfolio if choosing all projects
 totalcost = np.sum(x_perproj_matrix1[0])
@@ -78,8 +86,8 @@ totalcost = np.sum(x_perproj_matrix1[0])
 print("total portfolio cost allocation request (without correlations because it is a request):")
 print(totalcost)
 
-df10r = correlatedMCS(mcs_results1, iterations, nrcandidates)
-
+df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes)
+print("df10r: ", df10r)
 
 # Defining the fitness function
 def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
@@ -115,11 +123,11 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 50 #was 100 
+POPULATION_SIZE = 30 #was 100 #was 50
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
-MAX_GENERATIONS = 100 #was 500 #was 200 #was 100
-HALL_OF_FAME_SIZE = 5
+MAX_GENERATIONS = 50 #was 500 #was 200 #was 100
+HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
 creator.create("FitnessMax", base.Fitness, weights=(100000.0, 1.0))
@@ -212,7 +220,7 @@ portfolio_results = [0] * len(projectselection)
 portfolio_confidence_levels = [0] * len(projectselection)
 pf_conf2 = [0] * len(projectselection)
 budgets = [0] * len(projectselection)
-for i in range(len(projectselection)):
+for i in range(nrcandidates):
     npv_results = [[x[i].fitness.values[0][0] for x in solutions] for i in range(len(projectselection))]
     #portfolio_results = [[x[i] for x in solutions] for i in range(len(projectselection))]
     portfolio_confidence_levels = [[x[i].fitness.values[1] for x in solutions] for i in range(len(projectselection))]
@@ -224,6 +232,12 @@ portfolio_projection = [sum(x) for x in zip(*projectselection)]
 # convert portfolio_projection array into a binary array, where 1 means that the project is selected and 0 means that it is not
 portfolio_projection = [1 if x > 0 else 0 for x in portfolio_projection]
 
+# calculate the amount of projects in "portfolio_projection"
+projected_candidates = sum(portfolio_projection)
+
+# store the positions of the chosen projects in the portfolio_projection array, starting with 0 (as i+1 for if if starting with 1)
+zipped_projection_indexes = [i for i, x in enumerate(portfolio_projection) if x == 1]
+
 # convert portfolio_projection in a full ones array
 # portfolio_projection = [1] * len(portfolio_projection)
 
@@ -233,6 +247,8 @@ print ("portfolio_results: ", projectselection)
 print ("portfolio_confidence_levels: ", portfolio_confidence_levels)
 print ("budgets: ", budgets)
 print ("portfolio_projection: ", portfolio_projection)
+print ("Indexes of selected projects: ", zipped_projection_indexes)
+print ("Number of candidate projects for stage 2: ", projected_candidates)
 
 print ("************ STARTING STAGE 2 (long MCS) **********")
 #second simulation to get all cdfs for cost & benefits after optimization step (may_update: was 1000)
@@ -240,37 +256,83 @@ mcs_results2 = simulate(portfolio_projection,iterations_finalMCS)
 
 
 # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
-x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies)
-
+x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
+print ("x_perproj_matrix2: ", x_perproj_matrix2)
 
 # we assume correlations at the cost side, not at the benefits side (conservative approach)
 # update x_perproj_matrix2 with the correlation effect registered inside df20r
-
-
 # print("x_perproj_matrix2: ", x_perproj_matrix2)
 # separate the budget and npv results from the x_perproj_matrix
 bdgtperproject_matrix = x_perproj_matrix2[0]
 npvperproject_matrix = x_perproj_matrix2[1]
-#print(type(bdgtperproject_matrix))
-#print(type(npvperproject_matrix))
+# print(type(bdgtperproject_matrix))
+# print(type(npvperproject_matrix))
 bdgtperproject_matrix = np.squeeze(bdgtperproject_matrix)
 npvperproject_matrix = np.squeeze(npvperproject_matrix)
-print(bdgtperproject_matrix)
-print(npvperproject_matrix)
+
+# remove all data that has zeroes from bdgtperproject_matrix and npvperproject_matrix
+# bdgtperproject_matrix = bdgtperproject_matrix[np.nonzero(bdgtperproject_matrix.flatten())]
+# npvperproject_matrix = npvperproject_matrix[np.nonzero(npvperproject_matrix.flatten())]
+
+# print("bdgtperproject_matrix: ", bdgtperproject_matrix)
+# print("npvperproject_matrix: ", npvperproject_matrix)
+print("size of bdgtperproject_matrix", len(bdgtperproject_matrix))
+print("size of npvperproject_matrix", len(npvperproject_matrix))
+print("size of mcs_results2", len(mcs_results2))
+
+# print("mcs_results2 (input para correlacionar): ", mcs_results2)
 
 # for each of the options obtained in projectselection, calculate the total portfolio npv and the portfolio budget based on the information from x_perproj_matrix
-npv_results = [0] * len(projectselection)
+npv_results = [0] * len(projectselection) # as many as len(projectselection) because we have one npv per item in HoF
 budgets = [0] * len(projectselection)
 pf_conf2 = [0] * len(projectselection)
-df20r = correlatedMCS(mcs_results2, iterations_finalMCS, nrcandidates)
+widened_bdgtperproject_matrix = [0] * nrcandidates # as many as initial amount of project candidates
+widened_npvperproject_matrix = [0] * nrcandidates
+# initialize dataframe called widened_df20r as a copy of df10r
+widened_df20r = df10r.copy()
+# enlarge the dataframe to the size of iterations_finalMCS
+widened_df20r = widened_df20r.reindex(range(iterations_finalMCS))
+# fill the dataframe with zeroes
+widened_df20r.iloc[:, :] = 0
+
+df20r = correlatedMCS(mcs_results2, iterations_finalMCS, projected_candidates, zipped_projection_indexes)
+# print("df20r: ", df20r)
+
+# pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix and widened_npvperproject_matrix
+# The location of the values to be picked is available in zipped_projection_indexes
+j=0
+for i in range(nrcandidates):
+    if i in zipped_projection_indexes:
+        widened_bdgtperproject_matrix [i] = round(bdgtperproject_matrix [j],3)
+        widened_npvperproject_matrix [i] = round(npvperproject_matrix [j],3)
+        j+=1
+    else:
+        pass
+# print("widened_bdgtperproject_matrix: ", widened_bdgtperproject_matrix)
+# print("widened_npvperproject_matrix: ", widened_npvperproject_matrix)
+
+# pick in order the values from df20r and store them in widened_df20r (to be used in the next step)
+i=0
+j=0
+k=0
+for i in range(nrcandidates):
+    if i in zipped_projection_indexes:
+        for j in range(iterations_finalMCS):
+            widened_df20r.loc[j, widened_df20r.columns[i]] = df20r.loc[j, df20r.columns[k]]
+        k += 1
+    else:
+        pass
+
+print("widened_df20r: ", widened_df20r)
+
 for i in range(len(projectselection)):
     #calculate the total portfolio budget by multiplying the budget of each project by the binary array obtained in projectselection    
     print(projectselection[i])
-    budgets[i] = np.sum(np.multiply(bdgtperproject_matrix,projectselection[i]))
+    budgets[i] = np.sum(np.multiply(widened_bdgtperproject_matrix,projectselection[i]))
     #calculate the total portfolio npv by multiplying the npv of each project by the binary array obtained in projectselection
-    npv_results[i] = np.sum(np.multiply(npvperproject_matrix,projectselection[i]))
+    npv_results[i] = np.sum(np.multiply(widened_npvperproject_matrix,projectselection[i]))
     #multiply dataframe 20r by the chosen portfolio to reflect the effect of the projects that are chosen
-    pf_df20r = df20r * projectselection[i]
+    pf_df20r = widened_df20r * projectselection[i]
     #sum the rows of the new dataframe to calculate the total cost of the portfolio
     pf_cost20r = pf_df20r.sum(axis=1)
     #extract the maximum of the resulting costs
@@ -367,13 +429,13 @@ fig, ax = plt.subplots()
 # title of the plot
 # ax.set_title('Monte Carlo Simulation of a candidate project')
 # Plot the histogram of the monte carlo simulation of the first project
-ax.hist(mcs_results2[0][4], bins=200, color='grey', label='Histogram')
+ax.hist(mcs_results2[0][3], bins=200, color='grey', label='Histogram')
 # title of the x axis
 ax.set_xlabel('Cost in k€')
 # Create a twin Axes object that shares the x-axis of the original Axes object
 ax2 = ax.twinx()
 # Plot the histogram of the monte carlo simulation of the first project in the form of a cumulative distribution function
-ax2.hist(mcs_results2[0][4], bins=200, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
+ax2.hist(mcs_results2[0][3], bins=200, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
 # Set the y-axis of the twin Axes object to be visible
 ax2.yaxis.set_visible(True)
 #set maximum value of the y axis of the twin Axes object to 1
@@ -422,13 +484,13 @@ portfolio_risk[0] = (1-count/iterations)
 #print(df0)
 #print(correlation_matrix0)
 # plot the scatter matrix
-#pd.plotting.scatter_matrix(df0, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
-#plot the scatter matrix of df0 with seaborn pairplot function with grey color and a diagonal with a kde plot
-#sns.pairplot(df0, diag_kind="kde", palette="Greys")
+# pd.plotting.scatter_matrix(df0, alpha=0.2, figsize=(6, 6), diagonal='kde', color='grey', density_kwds={'color': 'grey'})
+# plot the scatter matrix of df0 with seaborn pairplot function with grey color and a diagonal with a kde plot
+# sns.pairplot(df0, diag_kind="kde", palette="Greys")
 # add title and axis labels
-#plt.suptitle('Correlation matrix of the MCS results where all projects are fully independent (in k€)')
-#plt.xlabel('Projects and cost in k€')
-#plt.ylabel('Projects and cost in k€')
+# plt.suptitle('Correlation matrix of the MCS results where all projects are fully independent (in k€)')
+# plt.xlabel('Projects and cost in k€')
+# plt.ylabel('Projects and cost in k€')
 #plt.show()
 
 

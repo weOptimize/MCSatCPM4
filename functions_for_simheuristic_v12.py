@@ -5,6 +5,7 @@ import random
 import numpy as np
 import pandas as pd
 import random as rnd
+import seaborn as sns
 import matplotlib.pyplot as plt
 from operator import itemgetter
 from pandas_ods_reader import read_ods
@@ -16,21 +17,21 @@ from fitter import Fitter, get_common_distributions, get_distributions
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 
 #I define the number of candidates to be considered
-nrcandidates = 20
+initcandidates = 20
 nr_confidence_policies = 1
 mcs_costs = []
 mcs_NPV = []
 maxbdgt = 3800
 #initialize matrices to store bdgt and npv
-bdgtperproject_matrix = np.zeros((nrcandidates, nr_confidence_policies))
-npvperproject_matrix = np.zeros((nrcandidates, nr_confidence_policies))
+bdgtperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
+npvperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
 
 
 #defining the function that calculates the total budget of a portfolio of projects
 def portfolio_totalbudget(portfolio,bdgtperproject):
     totalbudget_portfolio = 0
     #totalbudget_npv = 0
-    for i in range(nrcandidates):
+    for i in range(initcandidates):
         if portfolio[i] == 1:
             totalbudget_portfolio += bdgtperproject[i]
             #totalbudget_npv += npvperproject[i]
@@ -114,19 +115,24 @@ def simulate(arrayforsim, iterat):
             #compute the median of the NPV results
             median_npv = expected_value_extractor(sim_NPV, iterat)
         else:
-            #if the value i is 0, then the simulation is not performed and the appended results an array full of zeros
-            mcs_NPV.append([0.0])   
-            mcs_costs.append(np.zeros(iterat))
+            # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
+            # mcs_NPV.append([0.0])   
+            # mcs_costs.append(np.zeros(iterat))
+            # do nothing and go to the next iteration
+            pass
          
             
 
-    #print ("mcs_costs", mcs_costs)
-    #print ("mcs_NPV", mcs_NPV)
+    # print ("mcs_costs", mcs_costs)
+    # print ("mcs_NPV", mcs_NPV)
     return(mcs_costs, mcs_NPV)
 
 # compute the median of the NPV results
-def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies):
-    for i in range(nrcandidates):
+def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies, numberofprojects):
+    #initialize the arrays that will store the point estimates with size nr of projects x nr of budgetting confidence policies
+    bdgtperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
+    npvperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
+    for i in range(numberofprojects):
         median_npv = round(expected_value_extractor(mcs_NPV[i], len(mcs_NPV[i])),0)
         for j in range(len(budgetting_confidence_policies)):
             budgetting_confidence_policy = budgetting_confidence_policies[j]
@@ -135,10 +141,12 @@ def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies):
             #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
             bdgtperproject_matrix[i][j]=survival_value
             npvperproject_matrix[i][j]=median_npv/1000-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
+    print ("bdgtperproject_matrix", bdgtperproject_matrix)
+    print ("npvperproject_matrix", npvperproject_matrix)
     return(bdgtperproject_matrix, npvperproject_matrix)
 
 # modify MCS results to reflect the correlation matrix  
-def correlatedMCS(mcs_results, iterat, nrcandidates):  
+def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):  
     #check the parameters of beta distribution for each of the mcs_results  
     betaparams = []  
     for i in range(nrcandidates):  
@@ -167,7 +175,7 @@ def correlatedMCS(mcs_results, iterat, nrcandidates):
     for i in range(nrcandidates):  
         scale.append(betaparams[i][3])  
   
-  
+    # print("betaparams: ")
     # print(betaparams)  
   
     # copy the array with all MCS results  
@@ -181,22 +189,46 @@ def correlatedMCS(mcs_results, iterat, nrcandidates):
     seed_value = 1005    
     np.random.seed(seed_value)  
     # Generate a random symmetric matrix  
-    A = np.random.rand(nrcandidates, nrcandidates)  
+    A = np.random.rand(initcandidates, initcandidates)  
     A = (A + A.T) / 2  
     # Compute the eigenvalues and eigenvectors of the matrix  
     eigenvalues, eigenvectors = np.linalg.eigh(A)  
     # Ensure the eigenvalues are positive  
     eigenvalues = np.abs(eigenvalues)  
     # Normalize the eigenvalues so that their sum is equal to nrcandidates  
-    eigenvalues = eigenvalues / eigenvalues.sum() * nrcandidates  
+    eigenvalues = eigenvalues / eigenvalues.sum() * initcandidates  
     # Compute the covariance matrix. Forcing positive values, as long as negative correlations are not usual in reality of projects  
     cm10r = np.abs(eigenvectors.dot(np.diag(eigenvalues)).dot(eigenvectors.T))  
     # Ensure the diagonals are equal to 1  
-    for i in range(nrcandidates):  
+    for i in range(initcandidates):  
         cm10r[i, i] = 1  
-    #print('cm10r:')  
-    #print(cm10r)  
-  
+    print('cm10r BEFORE:')
+    print(cm10r)
+    
+    # if the sum of the values inside projection_indexes is the same as the number of candidates, then we do not change the correlation matrix
+    if len(projection_indexes) == initcandidates:
+        cm10r = cm10r
+    # if the sum of the values inside projection_indexes is not the same as the number of candidates, then we change the correlation matrix
+    else:
+        # we change the correlation matrix by setting the correlation between the candidates that are not selected to 0
+        # for each time we find a zero, we trim the whole column adn row of the correlation matrix corresponding to that candidate
+        i = 0
+        j = 0
+        for i in range(initcandidates):
+            if i not in projection_indexes:
+                cm10r = np.delete(cm10r, i-j, 0)
+                cm10r = np.delete(cm10r, i-j, 1)
+                j+=1
+    print('cm10r AFTER:')
+    print(cm10r)
+
+    #make sure no legend appears in the next plot
+    plt.figure(12)
+    #plt.legend().set_visible(False)
+    #heatmap of the correlation matrix cm10r
+    sns.set(font_scale=1.15)
+    sns.heatmap(cm10r, annot=True, cmap="Greys")
+
     #initialize dataframe df10r with size nrcandidates x iterations  
     df10r = pd.DataFrame(np.zeros((iterat, nrcandidates)))  
     # step 1: draw random variates from a multivariate normal distribution   
@@ -212,8 +244,10 @@ def correlatedMCS(mcs_results, iterat, nrcandidates):
         d = beta(a[i], b[i], loc[i], scale[i])  
         d_list.append(d)  
     # draw N random variates for each of the nrcandidates marginal distributions  
-    # WITHOUT applying a copula  
+    # WITHOUT applying a copula
+    # do it only for the ones different from 0  
     rand_list = [d.rvs(iterat) for d in d_list]  
+    # rand_list = [d.rvs(iterat) for i, d in enumerate(d_list) if i not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]  
     # initial correlation structure before applying a copula  
     c_before = np.corrcoef(rand_list)  
     # step 4: draw N random variates for each of the nrcandidates marginal distributions  
