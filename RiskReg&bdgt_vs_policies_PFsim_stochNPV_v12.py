@@ -18,7 +18,11 @@ from deap import base, creator, tools, algorithms
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 from functions_for_simheuristic_v12 import *
 
+# create an empty list to store the timestamps and labels
+timestamps = []
+
 start_time = time.time()
+timestamps.append(('t = 0', time.time()))
 
 #get budgetting confidence policy
 #budgetting_confidence_policies = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
@@ -41,13 +45,14 @@ budgets = []
 #defining the correlation matrix to be used in the monte carlo simulation (and as check when the correlations are expected to be 0)
 correlation_matrix = []
 
+
 #*****
 
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 10
-iterations_finalMCS = 200
+iterations = 500
+iterations_finalMCS = 10000
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -63,15 +68,15 @@ initial_projection_indexes = np.arange(nrcandidates)
 
 #first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
 mcs_results1 = simulate(candidatearray,iterations)
+
 #print("mcs results1: ", mcs_results1[0])
 
-#perform the point estimate of the cost (at each confidence level) and benefits of each project
-#and store the results in a matrix
-#initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
-#print(mcs_results1[0])
-#print(mcs_results1[1])
 # mcs_results1[0] corresponds to the project costs and mcs_results1[1] to the project benefits (NPV)
 x_perproj_matrix1 = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies, nrcandidates)
+
+# write the first timestamp and label to the list
+timestamps.append(('First MCS with point estimate of budgets and NPV for each project', time.time()))
+
 # extract first column of the matrix to get the budgeted costs of each project and store it in bdgtperproject_matrix
 bdgtperproject_matrix = x_perproj_matrix1[0]
 # extract second column of the matrix to get the NPV of each project and store it in npvperproject_matrix
@@ -83,11 +88,14 @@ npvperproject_matrix = x_perproj_matrix1[1]
 totalcost = np.sum(x_perproj_matrix1[0])
 
 
-print("total portfolio cost allocation request (without correlations because it is a request):")
-print(totalcost)
+# print("total portfolio cost allocation request (without correlations because it is a request):")
+# print(totalcost)
 
 df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes)
-print("df10r: ", df10r)
+# print("df10r: ", df10r)
+
+# write the second timestamp (substract the current time minus the previously stored timestamp) and label to the list
+timestamps.append(('Second MCS with correlated cost and NPV for each project', time.time()))
 
 # Defining the fitness function
 def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
@@ -123,10 +131,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 30 #was 100 #was 50
+POPULATION_SIZE = 50 #was 100 #was 50
 P_CROSSOVER = 0.9
 P_MUTATION = 0.1
-MAX_GENERATIONS = 50 #was 500 #was 200 #was 100
+MAX_GENERATIONS = 100 #was 500 #was 200 #was 100
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -241,6 +249,10 @@ zipped_projection_indexes = [i for i, x in enumerate(portfolio_projection) if x 
 # convert portfolio_projection in a full ones array
 # portfolio_projection = [1] * len(portfolio_projection)
 
+# write the third timestamp (substract the current time minus the previously stored timestamp) and label to the list
+timestamps.append(('Optimization step (GA algorithm)', time.time()))
+
+
 print ("************ SUMMARY STAGE 1 **********")
 print ("npv_results: ", npv_results)
 print ("portfolio_results: ", projectselection)
@@ -258,6 +270,9 @@ mcs_results2 = simulate(portfolio_projection,iterations_finalMCS)
 # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
 x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
 print ("x_perproj_matrix2: ", x_perproj_matrix2)
+
+# write the fourth timestamp and label to the list
+timestamps.append(('Second MCS, also including point estimate of budgets and NPV for shortlisted projects', time.time()))
 
 # we assume correlations at the cost side, not at the benefits side (conservative approach)
 # update x_perproj_matrix2 with the correlation effect registered inside df20r
@@ -353,6 +368,25 @@ finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_
 finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
 print ("Final Solution: ", finalsol_df)
 
+# write the fifth timestamp and label to the list. Calculation FINALIZED
+timestamps.append(('Application of correlation effect to final options', time.time()))
+
+segments = [0] * (len(timestamps)-1)
+
+# calculate the difference between each pair of timestamps
+for i in range(0, len(timestamps)-1):
+    segments[i] = (timestamps[i+1][0], round(timestamps[i+1][1] - timestamps[i][1], 2))
+    print(segments)
+    
+# create a dataframe from the list of timestamps
+crono_frame = pd.DataFrame(segments, columns=['Checkpoint', 'Execution time (s)'])
+
+# add a final register with the total execution time
+crono_frame.loc['Total'] = ['Total', crono_frame['Execution time (s)'].sum()]
+
+# print the dataframe
+print(crono_frame)
+
 npv_results = []
 budgets = []
 pf_cost20r = []
@@ -372,8 +406,8 @@ print("npv_results: ", npv_results)
 print("budgets: ", budgets)
 
 
-#*** execution time
-print("Execution time: %s milli-seconds" %((time.time() - start_time)* 1000))
+#*** Total execution time
+print("Total execution time: %s seconds" %((time.time() - start_time)))
 
 #separate the npv results from the solutions list
 #npv_results = [round(x[1][0], 0) for x in solutions]
