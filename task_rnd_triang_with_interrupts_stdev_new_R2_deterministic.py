@@ -190,7 +190,7 @@ def computeCPM(mydata):
 	SIMDAYS = []
 	for i in range(ntask):
 		#simduration.append(rnd.weibullvariate((mydata['ALPHA'][i]),(mydata['BETA'][i])))
-		SIMDAYS.append(round(rnd.triangular((mydata['LOW'][i]),(mydata['HIGH'][i]),(mydata['MODE'][i])),2))
+		SIMDAYS.append(round((mydata['MODE'][i]),2))
 	#incorporate the column of simulated durations to the data frame:
 				
 	mydata['SIMDAYS'] = SIMDAYS
@@ -200,13 +200,14 @@ def computeCPM(mydata):
 	mydata = slack(mydata)
 	return mydata
 
+
 def computeRR(myriskreg):
 	# nrisk -> number of tasks
 	nrisk = myriskreg.shape[0]
 	#initialize pxi array with size of nrisk
 	pxi = np.zeros(nrisk, dtype = np.float64)
 	for i in range(nrisk):
-		pxi[i] = round((rng.binomial(1,myriskreg['Probability'][i])) * rnd.triangular(myriskreg['Opt_impact'][i],myriskreg['Pess_impact'][i],myriskreg['ML_impact'][i]),2)
+		pxi[i] = round((myriskreg['Probability'][i] * myriskreg['ML_impact'][i]),2)
 	#sum all values at pxi	
 	total_impact_RR = sum(pxi)
 	#extract baseline cost from risk register file
@@ -215,7 +216,7 @@ def computeRR(myriskreg):
 
 
 			
-def MCS_CPM_RR(mydata, myriskreg, iterations):
+def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 	durationsplus = []
 	callsperday= []
 	callarray= []
@@ -238,24 +239,24 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 		impact_RR = computeRR(myriskreg)
 		total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 3 + total_impact_RR + baseline_cost
+		costoftime = round((duratplus * 3 + total_impact_RR + baseline_cost),3)
 		projectcost.append(costoftime)
+		
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
 
-def MCS_NPV(cashflows, iterations):
+def MCS_NPVdet(cashflows, iterations):
 	projectnpv = []
 	for i in range(iterations):
-		wacc = np.random.normal(0.1,0.06)
+		wacc = 0.1
 		#convert cashflows into a numpy array
 		cashflows = np.array(cashflows)
-		#substitute the cashflows stored by a stochastic variable that follows a normal distribution with mean equal to the cashflow and standard deviation equal to the cashflow*0.002
-		stochcashflows = np.random.normal(cashflows, cashflows*0.2)
 		# transpose the array
-		stochcashflows = stochcashflows.T
+		cashflows = cashflows.T
 		#print(stochcashflows)
 		#compute the net present value of the project
-		npvvalue = npv(wacc, stochcashflows)
+		npvvalue = npv(wacc, cashflows)
+		npvvalue = round(npvvalue,3)/1000 #convert to k€ so that we use same units as bdgt. ATTENTION: value without substracting the baseline cost
 		#print(npvvalue)
 		projectnpv.append(npvvalue)
 	return projectnpv
@@ -284,12 +285,13 @@ def MCS_CPM_PF(mydata, iterations):
 		computeCPM(mydata)
 		durat = round(np.max(mydata['EF']),2)
 		totaldays = math.ceil(durat)
-		callsperday = simulatearrivals(5, totaldays)
+		#callsperday = simulatearrivals(5, totaldays)
 		#sum all values at totalcalls
-		totalcalls = sum(callsperday)
-		rng = np.random.default_rng()
-		callarray = rng.uniform(0.02, 0.06, totalcalls)
-		duratplus = round(durat + sum(callarray),2)
+		totalcalls = 5 * totaldays # was totalcalls = sum(callsperday)
+		# rng = np.random.default_rng()
+		# callarray = rng.uniform(0.02, 0.06, totalcalls)
+		totalextratime = totalcalls * 0.04
+		duratplus = round(durat + totalextratime)
 		durationsplus.append(duratplus)
 		durations.append(durat)
 

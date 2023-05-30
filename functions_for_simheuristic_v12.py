@@ -15,6 +15,7 @@ from fitter import Fitter, get_common_distributions, get_distributions
 
 #import created scripts:
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
+from task_rnd_triang_with_interrupts_stdev_new_R2_deterministic import *
 
 #I define the number of candidates to be considered
 initcandidates = 20
@@ -58,11 +59,11 @@ def expected_value_extractor(sim_npv, iterations):
 	valuesplus, base = np.histogram(sim_npv, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
 	cumulativeplus = np.cumsum(valuesplus)
 	survivalvalues = 100*(len(sim_npv)-cumulativeplus)/len(sim_npv)
-	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%
+	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%. Here I place 50% because I want to use the median=avg=E()
 	index = (np.abs(survivalvalues-100*(1-.5))).argmin()
 	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
-	budgetedduration = np.round(base[index],2)
-	return budgetedduration
+	budgetednpv = np.round(base[index],2)
+	return budgetednpv
 
 
 
@@ -141,8 +142,8 @@ def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies, numberofpr
             #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
             bdgtperproject_matrix[i][j]=survival_value
             npvperproject_matrix[i][j]=median_npv/1000-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
-    print ("bdgtperproject_matrix", bdgtperproject_matrix)
-    print ("npvperproject_matrix", npvperproject_matrix)
+    # print ("bdgtperproject_matrix", bdgtperproject_matrix)
+    # print ("npvperproject_matrix", npvperproject_matrix)
     return(bdgtperproject_matrix, npvperproject_matrix)
 
 # modify MCS results to reflect the correlation matrix  
@@ -202,8 +203,8 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     # Ensure the diagonals are equal to 1  
     for i in range(initcandidates):  
         cm10r[i, i] = 1  
-    print('cm10r BEFORE:')
-    print(cm10r)
+    # print('cm10r BEFORE:')
+   #  print(cm10r)
     
     # if the sum of the values inside projection_indexes is the same as the number of candidates, then we do not change the correlation matrix
     if len(projection_indexes) == initcandidates:
@@ -219,8 +220,8 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
                 cm10r = np.delete(cm10r, i-j, 0)
                 cm10r = np.delete(cm10r, i-j, 1)
                 j+=1
-    print('cm10r AFTER:')
-    print(cm10r)
+    # print('cm10r AFTER:')
+    # print(cm10r)
 
     #make sure no legend appears in the next plot
     plt.figure(12)
@@ -266,3 +267,62 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     df10r.rename(columns=dict(enumerate(col_names)), inplace=True)  
     correlation_matrix1 = df10r.corr()  
     return df10r  
+
+def calc_det(arrayforsim, iterat):
+    #initialize the arrays that will store the results of the MonteCarlo Simulation
+    det_costs = []
+    det_NPV = []
+    for i in range(len(arrayforsim)):        
+        #if the value i is 1, then the simulation is performed
+        if arrayforsim[i] == 1:
+            # open ten different ODS files and store the results in a list after computing the CPM and MCS 
+            # (restore to only last line if old version)
+            if i < 9:
+                filename = "RND_Schedules/data_wb0" + str(i+1) + ".ods"
+            else:
+                filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"  
+            #print(filename)
+            mydata = read_ods(filename, 1)
+            # open ten different ODS files and store the results in a list after computing the CPM and MCS 
+            # (restore to only last line if old version)
+            if i < 9:
+                filename = "RND_Schedules/riskreg_0" + str(i+1) + ".ods"
+            else:
+                filename = "RND_Schedules/riskreg_" + str(i+1) + ".ods"
+            #print(filename)
+            myriskreg = read_ods(filename, 1) # was myriskreg = read_ods(filename, "Sheet1")
+
+            #compute MonteCarlo Simulation and store the results in an array called "sim1_costs"
+            sim_costs = MCS_CPM_RRdet(mydata, myriskreg, iterat)
+            cashflows = []
+            # open the file that contains the expected cash flows, and extract the ones for the project i (located in row i)
+            with open('RND_Schedules/expected_cash_flows.txt') as f:
+                # read all the lines in the file as a list
+                lines = f.readlines()
+                # get the line at index i (assuming i is already defined)
+                line = lines[i]
+                # split the line by whitespace and convert each element to a float
+                cashflows = list(map(float, line.split()))
+
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV", also 
+            sim_NPV = MCS_NPVdet(cashflows, iterat)
+            print(sim_NPV)
+            # substract sim_costs from all the values inside the array
+            for j in range(len(sim_NPV)):
+                sim_NPV[j] = sim_NPV[j] - sim_costs[j]
+            #print(sim_NPV)
+            
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
+            det_costs.append(sim_costs)
+            det_NPV.append(sim_NPV)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
+            #mcs_npvs1.append(sim1_NPV)
+            #compute the median of the NPV results
+        else:
+            # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
+            # mcs_NPV.append([0.0])   
+            # mcs_costs.append(np.zeros(iterat))
+            # do nothing and go to the next iteration
+            pass
+
+    return(det_costs, det_NPV)

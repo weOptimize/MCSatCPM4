@@ -51,8 +51,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 500
-iterations_finalMCS = 10000
+iterations = 300
+iterations_finalMCS = 5000
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -73,6 +73,7 @@ mcs_results1 = simulate(candidatearray,iterations)
 
 # mcs_results1[0] corresponds to the project costs and mcs_results1[1] to the project benefits (NPV)
 x_perproj_matrix1 = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies, nrcandidates)
+print ("x_perproj_matrix1: ", x_perproj_matrix1)
 
 # write the first timestamp and label to the list
 timestamps.append(('First MCS with point estimate of budgets and NPV for each project', time.time()))
@@ -95,7 +96,7 @@ df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection
 # print("df10r: ", df10r)
 
 # write the second timestamp (substract the current time minus the previously stored timestamp) and label to the list
-timestamps.append(('Second MCS with correlated cost and NPV for each project', time.time()))
+timestamps.append(('First MCS with correlated cost and NPV for each project', time.time()))
 
 # Defining the fitness function
 def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
@@ -131,10 +132,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 50 #was 100 #was 50
-P_CROSSOVER = 0.9
-P_MUTATION = 0.1
-MAX_GENERATIONS = 100 #was 500 #was 200 #was 100
+POPULATION_SIZE = 180 #was 100 #was 50
+P_CROSSOVER = 0.4
+P_MUTATION = 0.6
+MAX_GENERATIONS = 300 #was 500 #was 200 #was 100
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -269,7 +270,7 @@ mcs_results2 = simulate(portfolio_projection,iterations_finalMCS)
 
 # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
 x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
-print ("x_perproj_matrix2: ", x_perproj_matrix2)
+# print ("x_perproj_matrix2: ", x_perproj_matrix2)
 
 # write the fourth timestamp and label to the list
 timestamps.append(('Second MCS, also including point estimate of budgets and NPV for shortlisted projects', time.time()))
