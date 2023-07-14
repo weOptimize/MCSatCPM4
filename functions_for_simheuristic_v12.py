@@ -223,12 +223,13 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     # print('cm10r AFTER:')
     # print(cm10r)
 
-    #make sure no legend appears in the next plot
-    plt.figure(12)
-    #plt.legend().set_visible(False)
-    #heatmap of the correlation matrix cm10r
-    sns.set(font_scale=1.15)
-    sns.heatmap(cm10r, annot=True, cmap="Greys")
+    if cm10r.shape[0] == initcandidates:
+        #make sure no legend appears in the next plot
+        plt.figure(12)
+        #plt.legend().set_visible(False)
+        #heatmap of the correlation matrix cm10r
+        sns.set(font_scale=1.15)
+        sns.heatmap(cm10r, annot=True, cmap="Greys")
 
     #initialize dataframe df10r with size nrcandidates x iterations  
     df10r = pd.DataFrame(np.zeros((iterat, nrcandidates)))  
