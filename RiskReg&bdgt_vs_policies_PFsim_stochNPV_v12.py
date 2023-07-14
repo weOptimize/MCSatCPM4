@@ -39,7 +39,7 @@ mcs_results2 = []
 #defining a global array that stores all portfolios generated (and another one for the ones that entail a solution)
 tested_portfolios = []
 solution_portfolios = []
-lead_results = []
+npv_results = []
 budgets = []
 
 #defining the correlation matrix to be used in the monte carlo simulation (and as check when the correlations are expected to be 0)
@@ -52,10 +52,10 @@ correlation_matrix = []
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
 iterations = 300
-iterations_finalMCS = 1000 #was 5k
+iterations_finalMCS = 5000
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
-maxbdgt = 6000
+maxbdgt = 10800
 min_pf_conf = 0.90
 
 #initialize an array of budgeted durations that is nrcandidates x len(budgetting_confidence_policies)
@@ -66,26 +66,26 @@ candidatearray = np.ones(nrcandidates)
 #I define an initial array of indexes with all candidates ranging from 0 to nrcandidates-1
 initial_projection_indexes = np.arange(nrcandidates)
 
-#first simulation to get all cdfs for Leads & costs before optimization step (may_update: was 1000)
+#first simulation to get all cdfs for cost & benefits before optimization step (may_update: was 1000)
 mcs_results1 = simulate(candidatearray,iterations)
 
 #print("mcs results1: ", mcs_results1[0])
 
-# mcs_results1[0] corresponds to the media Leads and mcs_results1[1] to the media costs
+# mcs_results1[0] corresponds to the project costs and mcs_results1[1] to the project benefits (NPV)
 x_perproj_matrix1 = pointestimate(mcs_results1[0], mcs_results1[1], budgetting_confidence_policies, nrcandidates)
 print ("x_perproj_matrix1: ", x_perproj_matrix1)
 
 # write the first timestamp and label to the list
 timestamps.append(('First MCS with point estimate of budgets and NPV for each project', time.time()))
 
-# extract first column of the matrix to get the budgeted costs of each media and store it in leadsperproject_matrix
-leadsperproject_matrix = x_perproj_matrix1[0]
-# extract second column of the matrix to get the NPV of each media and store it in costperproject_matrix
-costperproject_matrix = x_perproj_matrix1[1]
-# print("leadsperproject_matrix at MAIN: ", leadsperproject_matrix)
-# print("costperproject_matrix at MAIN: ", costperproject_matrix)
+# extract first column of the matrix to get the budgeted costs of each project and store it in bdgtperproject_matrix
+bdgtperproject_matrix = x_perproj_matrix1[0]
+# extract second column of the matrix to get the NPV of each project and store it in npvperproject_matrix
+npvperproject_matrix = x_perproj_matrix1[1]
+# print("bdgtperproject_matrix at MAIN: ", bdgtperproject_matrix)
+# print("npvperproject_matrix at MAIN: ", npvperproject_matrix)
 # print("x_perproj_matrix1: ", x_perproj_matrix1)
-# sum the costs of all medias to get the total cost of the portfolio if choosing all media
+# sum the costs of all projects to get the total cost of the portfolio if choosing all projects
 totalcost = np.sum(x_perproj_matrix1[0])
 
 
@@ -96,13 +96,13 @@ df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection
 # print("df10r: ", df10r)
 
 # write the second timestamp (substract the current time minus the previously stored timestamp) and label to the list
-timestamps.append(('First MCS with correlated cost and NPV for each media', time.time()))
+timestamps.append(('First MCS with correlated cost and NPV for each project', time.time()))
 
 # Defining the fitness function
-def evaluate(individual, leadsperproject, costperproject, maxbdgt):
+def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     total_cost = 0
-    total_leads = 0
-    #multiply dataframe 10r by the chosen portfolio to reflect the effect of the media that are chosen
+    total_npv = 0
+    #multiply dataframe 10r by the chosen portfolio to reflect the effect of the projects that are chosen
     pf_df10r = df10r * individual
     #sum the rows of the new dataframe to calculate the total cost of the portfolio
     pf_cost10r = pf_df10r.sum(axis=1)
@@ -122,20 +122,20 @@ def evaluate(individual, leadsperproject, costperproject, maxbdgt):
     for i in range(nrcandidates):
         #print(total_cost)
         if individual[i] == 1:
-            total_leads += leadsperproject[i] #was total_cost += ...
+            total_cost += bdgtperproject[i]
             #total_cost += PROJECTS[i][0]
             # add the net present value of the project to the total net present value of the portfolio
-            total_cost += costperproject[i] #was total_npv += ...
+            total_npv += npvperproject[i]
             #total_npv += npv[i][1]
     if total_cost > maxbdgt or portfolio_confidence < min_pf_conf:
         return 0, 0
-    return total_leads, portfolio_confidence
+    return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 50 #was 180 #was 50
+POPULATION_SIZE = 180 #was 100 #was 50
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 100 #was 500 #was 300 #was 100
+MAX_GENERATIONS = 300 #was 500 #was 200 #was 100
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -148,12 +148,12 @@ toolbox = base.Toolbox()
 # register a function to generate random integers (0 or 1) for each attribute/gene in an individual
 toolbox.register("attr_bool", random.randint, 0, 1)
 # register a function to generate individuals (which are lists of several -nrcandidates- 0s and 1s -genes-
-# that represent the media to be included in the portfolio)
+# that represent the projects to be included in the portfolio)
 toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, nrcandidates)
 # register a function to generate a population (a list of individuals -candidate portfolios-)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 # register the goal / fitness function
-toolbox.register("evaluate", evaluate, leadsperproject=leadsperproject_matrix, costperproject=costperproject_matrix, maxbdgt=maxbdgt)
+toolbox.register("evaluate", evaluate, bdgtperproject=bdgtperproject_matrix, npvperproject=npvperproject_matrix, maxbdgt=maxbdgt)
 # register the crossover operator (cxTwoPoint) with a probability of 0.9 (defined above)
 toolbox.register("mate", tools.cxTwoPoint)
 # register a mutation operator with a probability to flip each attribute/gene of 0.05.
@@ -174,7 +174,7 @@ hall_of_fame = tools.HallOfFame(HALL_OF_FAME_SIZE)
 stats = tools.Statistics(lambda ind: ind.fitness.values)
 stats.register("max", max)
 
-# defining the function that maximizes the net present value of a portfolio of media, while respecting the budget constraint (using a genetic algorithm)
+# defining the function that maximizes the net present value of a portfolio of projects, while respecting the budget constraint (using a genetic algorithm)
 def maximize_npv():
     # Empty the hall of fame
     hall_of_fame.clear()
@@ -194,7 +194,7 @@ def maximize_npv():
         # hall_of_fame.sort(key=itemgetter(0), reverse=True)
         population = toolbox.select(offspring, k=len(population))    
         record = stats.compile(population)
-        print(f"Generation {generation}: Max Leads = {record['max']}")
+        print(f"Generation {generation}: Max NPV = {record['max']}")
 
     #de momento me dejo de complicarme con el hall of fame y me quedo con el último individuo de la última generación
     # return the optimal portfolio from the hall of fame, their fitness and the total budget
@@ -202,38 +202,38 @@ def maximize_npv():
     #return hall_of_fame
     print("Hall of Fame:")
     for i in range(HALL_OF_FAME_SIZE):
-        print(hall_of_fame[i], hall_of_fame[i].fitness.values[0], hall_of_fame[i].fitness.values[1], portfolio_totalbudget(hall_of_fame[i], leadsperproject_matrix))
-    #print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], hall_of_fame[0].fitness.values[1], portfolio_totalbudget(hall_of_fame[0], leadsperproject_matrix))
-    #print(hall_of_fame[1], hall_of_fame[1].fitness.values[0], hall_of_fame[1].fitness.values[1], portfolio_totalbudget(hall_of_fame[1], leadsperproject_matrix))
-    #print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], leadsperproject_matrix))
-    #return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], leadsperproject_matrix)
+        print(hall_of_fame[i], hall_of_fame[i].fitness.values[0], hall_of_fame[i].fitness.values[1], portfolio_totalbudget(hall_of_fame[i], bdgtperproject_matrix))
+    #print(hall_of_fame[0], hall_of_fame[0].fitness.values[0], hall_of_fame[0].fitness.values[1], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix))
+    #print(hall_of_fame[1], hall_of_fame[1].fitness.values[0], hall_of_fame[1].fitness.values[1], portfolio_totalbudget(hall_of_fame[1], bdgtperproject_matrix))
+    #print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], bdgtperproject_matrix))
+    #return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
     return hall_of_fame
 
 # this function calculates the npv of each project and then uses the maximizer function to obtain and return portfolio, npv and bdgt in a matrix (solutions)
 for i in range(len(budgetting_confidence_policies)):
-    # I take the column of leadsperproject_matrix that corresponds to the budgetting confidence policy
-    leadsperproject=leadsperproject_matrix[:,i]
-    # print(leadsperproject)
-    costperproject=costperproject_matrix[:,i]
-    # print(costperproject)
+    # I take the column of bdgtperproject_matrix that corresponds to the budgetting confidence policy
+    bdgtperproject=bdgtperproject_matrix[:,i]
+    # print(bdgtperproject)
+    npvperproject=npvperproject_matrix[:,i]
+    # print(npvperproject)
     # execute the maximizer function to obtain the portfolio, and its npv and bdgt
     projectselection = maximize_npv()
-    # assign the result from media selection to the variable solutions
+    # assign the result from projectselection to the variable solutions
     solutions.append(projectselection)
     #print(solutions)
 # lately I only had one BCP, si it has performed the append only once, however as the solution is a hall of fame, it has appended a list of 3 individuals
 
 #store the npv results, portfolio results, portfolio confidence levels and budgets taken in different lists
-lead_results = [0] * len(projectselection)
+npv_results = [0] * len(projectselection)
 portfolio_results = [0] * len(projectselection)
 portfolio_confidence_levels = [0] * len(projectselection)
 pf_conf2 = [0] * len(projectselection)
 budgets = [0] * len(projectselection)
 for i in range(nrcandidates):
-    lead_results = [[x[i].fitness.values[0][0] for x in solutions] for i in range(len(projectselection))]
+    npv_results = [[x[i].fitness.values[0][0] for x in solutions] for i in range(len(projectselection))]
     #portfolio_results = [[x[i] for x in solutions] for i in range(len(projectselection))]
     portfolio_confidence_levels = [[x[i].fitness.values[1] for x in solutions] for i in range(len(projectselection))]
-    budgets = [[portfolio_totalbudget(x[i], leadsperproject_matrix)[0] for x in solutions] for i in range(len(projectselection))]
+    budgets = [[portfolio_totalbudget(x[i], bdgtperproject_matrix)[0] for x in solutions] for i in range(len(projectselection))]
 
 # take all arrays inside portfolio_results and sum all of them
 portfolio_projection = [sum(x) for x in zip(*projectselection)]
@@ -255,7 +255,7 @@ timestamps.append(('Optimization step (GA algorithm)', time.time()))
 
 
 print ("************ SUMMARY STAGE 1 **********")
-print ("Lead_results: ", lead_results)
+print ("npv_results: ", npv_results)
 print ("portfolio_results: ", projectselection)
 print ("portfolio_confidence_levels: ", portfolio_confidence_levels)
 print ("budgets: ", budgets)
@@ -279,31 +279,31 @@ timestamps.append(('Second MCS, also including point estimate of budgets and NPV
 # update x_perproj_matrix2 with the correlation effect registered inside df20r
 # print("x_perproj_matrix2: ", x_perproj_matrix2)
 # separate the budget and npv results from the x_perproj_matrix
-leadsperproject_matrix = x_perproj_matrix2[0]
-costperproject_matrix = x_perproj_matrix2[1]
-# print(type(leadsperproject_matrix))
-# print(type(costperproject_matrix))
-leadsperproject_matrix = np.squeeze(leadsperproject_matrix)
-costperproject_matrix = np.squeeze(costperproject_matrix)
+bdgtperproject_matrix = x_perproj_matrix2[0]
+npvperproject_matrix = x_perproj_matrix2[1]
+# print(type(bdgtperproject_matrix))
+# print(type(npvperproject_matrix))
+bdgtperproject_matrix = np.squeeze(bdgtperproject_matrix)
+npvperproject_matrix = np.squeeze(npvperproject_matrix)
 
-# remove all data that has zeroes from leadsperproject_matrix and costperproject_matrix
-# leadsperproject_matrix = leadsperproject_matrix[np.nonzero(leadsperproject_matrix.flatten())]
-# costperproject_matrix = costperproject_matrix[np.nonzero(costperproject_matrix.flatten())]
+# remove all data that has zeroes from bdgtperproject_matrix and npvperproject_matrix
+# bdgtperproject_matrix = bdgtperproject_matrix[np.nonzero(bdgtperproject_matrix.flatten())]
+# npvperproject_matrix = npvperproject_matrix[np.nonzero(npvperproject_matrix.flatten())]
 
-# print("leadsperproject_matrix: ", leadsperproject_matrix)
-# print("costperproject_matrix: ", costperproject_matrix)
-print("size of leadsperproject_matrix", len(leadsperproject_matrix))
-print("size of costperproject_matrix", len(costperproject_matrix))
+# print("bdgtperproject_matrix: ", bdgtperproject_matrix)
+# print("npvperproject_matrix: ", npvperproject_matrix)
+print("size of bdgtperproject_matrix", len(bdgtperproject_matrix))
+print("size of npvperproject_matrix", len(npvperproject_matrix))
 print("size of mcs_results2", len(mcs_results2))
 
 # print("mcs_results2 (input para correlacionar): ", mcs_results2)
 
 # for each of the options obtained in projectselection, calculate the total portfolio npv and the portfolio budget based on the information from x_perproj_matrix
-lead_results = [0] * len(projectselection) # as many as len(projectselection) because we have one npv per item in HoF
+npv_results = [0] * len(projectselection) # as many as len(projectselection) because we have one npv per item in HoF
 budgets = [0] * len(projectselection)
 pf_conf2 = [0] * len(projectselection)
-widened_leadsperproject_matrix = [0] * nrcandidates # as many as initial amount of project candidates
-widened_costperproject_matrix = [0] * nrcandidates
+widened_bdgtperproject_matrix = [0] * nrcandidates # as many as initial amount of project candidates
+widened_npvperproject_matrix = [0] * nrcandidates
 # initialize dataframe called widened_df20r as a copy of df10r
 widened_df20r = df10r.copy()
 # enlarge the dataframe to the size of iterations_finalMCS
@@ -314,18 +314,18 @@ widened_df20r.iloc[:, :] = 0
 df20r = correlatedMCS(mcs_results2, iterations_finalMCS, projected_candidates, zipped_projection_indexes)
 # print("df20r: ", df20r)
 
-# pick in order the values from leadsperproject_matrix and costperproject_matrix and store them in widened_leadsperproject_matrix and widened_costperproject_matrix
+# pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix and widened_npvperproject_matrix
 # The location of the values to be picked is available in zipped_projection_indexes
 j=0
 for i in range(nrcandidates):
     if i in zipped_projection_indexes:
-        widened_leadsperproject_matrix [i] = round(leadsperproject_matrix [j],3)
-        widened_costperproject_matrix [i] = round(costperproject_matrix [j],3)
+        widened_bdgtperproject_matrix [i] = round(bdgtperproject_matrix [j],3)
+        widened_npvperproject_matrix [i] = round(npvperproject_matrix [j],3)
         j+=1
     else:
         pass
-# print("widened_leadsperproject_matrix: ", widened_leadsperproject_matrix)
-# print("widened_costperproject_matrix: ", widened_costperproject_matrix)
+# print("widened_bdgtperproject_matrix: ", widened_bdgtperproject_matrix)
+# print("widened_npvperproject_matrix: ", widened_npvperproject_matrix)
 
 # pick in order the values from df20r and store them in widened_df20r (to be used in the next step)
 i=0
@@ -344,9 +344,9 @@ print("widened_df20r: ", widened_df20r)
 for i in range(len(projectselection)):
     #calculate the total portfolio budget by multiplying the budget of each project by the binary array obtained in projectselection    
     print(projectselection[i])
-    budgets[i] = np.sum(np.multiply(widened_leadsperproject_matrix,projectselection[i]))
+    budgets[i] = np.sum(np.multiply(widened_bdgtperproject_matrix,projectselection[i]))
     #calculate the total portfolio npv by multiplying the npv of each project by the binary array obtained in projectselection
-    lead_results[i] = np.sum(np.multiply(widened_costperproject_matrix,projectselection[i]))
+    npv_results[i] = np.sum(np.multiply(widened_npvperproject_matrix,projectselection[i]))
     #multiply dataframe 20r by the chosen portfolio to reflect the effect of the projects that are chosen
     pf_df20r = widened_df20r * projectselection[i]
     #sum the rows of the new dataframe to calculate the total cost of the portfolio
@@ -364,7 +364,7 @@ for i in range(len(projectselection)):
     pf_conf2[i] = 1-count/iterations_finalMCS
 
 # create a dataframe with the results
-finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': lead_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
+finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
 # order the dataframe by the portfolio npv, starting with the highest npv
 finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
 print ("Final Solution: ", finalsol_df)
@@ -388,7 +388,7 @@ crono_frame.loc['Total'] = ['Total', crono_frame['Execution time (s)'].sum()]
 # print the dataframe
 print(crono_frame)
 
-lead_results = []
+npv_results = []
 budgets = []
 pf_cost20r = []
 #pf_conf2 = []
@@ -396,14 +396,14 @@ pf_cost20r = []
 #from the sorted dataframe, take the first row, which corresponds to the highest npv portfolio and extract the data needed for the following pictures
 finalsol_df = finalsol_df.iloc[0]
 portfolio_results = finalsol_df[0]
-lead_results_escalar = finalsol_df[1]
-lead_results.append(lead_results_escalar)
-#lead_results.append(finalsol_df[1])
+npv_results_escalar = finalsol_df[1]
+npv_results.append(npv_results_escalar)
+#npv_results.append(finalsol_df[1])
 budgets_escalar = finalsol_df[2]
 budgets.append(budgets_escalar)
 #budgets.append(finalsol_df[2])
 print("portfolio_results: ", portfolio_results)
-print("lead_results: ", lead_results)
+print("npv_results: ", npv_results)
 print("budgets: ", budgets)
 
 
@@ -411,7 +411,7 @@ print("budgets: ", budgets)
 print("Total execution time: %s seconds" %((time.time() - start_time)))
 
 #separate the npv results from the solutions list
-#lead_results = [round(x[1][0], 0) for x in solutions]
+#npv_results = [round(x[1][0], 0) for x in solutions]
 #separate the portfolio results from the solutions list
 #portfolio_results = [x[0] for x in solutions]
 #separate the budgets taken from the solutions list (was budgets = [x[2][0] for x in solutions] -> [0] PARA CUANDO SEA SOLO UN BCP
@@ -420,7 +420,7 @@ print("Total execution time: %s seconds" %((time.time() - start_time)))
 #DESACTIVAR ALL THIS SI QUIERES MIRAR TODOS JUNTOS - HASTA PLT(SHOW)
 #represent in a scatter plot the results of optimal npv extracted from dataframe finalsol_df vs budgetting confidence policy
 plt.figure(1)
-plt.scatter(budgetting_confidence_policies, lead_results, color='grey')
+plt.scatter(budgetting_confidence_policies, npv_results, color='grey')
 #zoom in the plot so that the minumum value of the x axis is 0.5 and the maximum value of the x axis is 1
 plt.title("NPV vs Budgetting Confidence Policy")
 plt.xlabel("Budgetting Confidence Policy")
@@ -428,9 +428,9 @@ plt.ylabel("NPV")
 # rescale all fonts to 16
 plt.rcParams.update({'font.size': 14})
 #add the values of the npv results to the plot as annotations and displaced vertically a 1% of the y axis
-for i, txt in enumerate(lead_results):
+for i, txt in enumerate(npv_results):
     txt = "{:,}".format(round(txt))
-    plt.annotate(txt, (budgetting_confidence_policies[i], lead_results[i]), textcoords="offset points", xytext=(0, 10), ha='center')
+    plt.annotate(txt, (budgetting_confidence_policies[i], npv_results[i]), textcoords="offset points", xytext=(0, 10), ha='center')
 plt.xlim(0.45, 1)
 plt.grid()
 #plt.show()

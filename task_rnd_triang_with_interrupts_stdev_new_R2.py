@@ -178,8 +178,7 @@ def slack(mydata):
 def simulatearrivals(average, periods):
 	arrivals = []
 	rng = np.random.default_rng()
-	sa = rng.poisson(average, periods) # DEACTIVATED DUE TO NO APPLICATION IN MKT PLAN
-	# sa = 0
+	sa = rng.poisson(average, periods)
 	#print(sa)
 	#count, bins, ignored = plt.hist(sa, average*3, density=True)
 	#plt.show()
@@ -244,7 +243,7 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
 
-def MCS_cost(cashflows, iterations):
+def MCS_NPV(cashflows, iterations):
 	projectnpv = []
 	for i in range(iterations):
 		wacc = np.random.normal(0.1,0.06)
