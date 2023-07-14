@@ -20,32 +20,32 @@ from task_rnd_triang_with_interrupts_stdev_new_R2_deterministic import *
 #I define the number of candidates to be considered
 initcandidates = 20
 nr_confidence_policies = 1
-mcs_costs = []
-mcs_NPV = []
+mcs_leads = []
+mcs_cost = []
 maxbdgt = 3800
-#initialize matrices to store bdgt and npv
-bdgtperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
-npvperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
+#initialize matrices to store leads and cost
+leadsperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
+costperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
 
 
-#defining the function that calculates the total budget of a portfolio of projects
-def portfolio_totalbudget(portfolio,bdgtperproject):
+#defining the function that calculates the total Leads of a portfolio of media
+def portfolio_totalbudget(portfolio,leadsperproject):
     totalbudget_portfolio = 0
-    #totalbudget_npv = 0
+    #totalbudget_cost = 0
     for i in range(initcandidates):
         if portfolio[i] == 1:
-            totalbudget_portfolio += bdgtperproject[i]
-            #totalbudget_npv += npvperproject[i]
-    #return totalbudget_portfolio, totalbudget_npv
+            totalbudget_portfolio += leadsperproject[i]
+            #totalbudget_cost += costperproject[i]
+    #return totalbudget_portfolio, totalbudget_cost
     return totalbudget_portfolio
 
 
 #define the function that returns the survival value for a given budgetting confidence policy
-def survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations):
+def survival_value_extractor(sim_leads, budgetting_confidence_policy, iterations):
     #calculate the cumulative sum of the values of the histogram
-	valuesplus, base = np.histogram(sim_costs, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
+	valuesplus, base = np.histogram(sim_leads, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
 	cumulativeplus = np.cumsum(valuesplus)
-	survivalvalues = 100*(len(sim_costs)-cumulativeplus)/len(sim_costs)
+	survivalvalues = 100*(len(sim_leads)-cumulativeplus)/len(sim_leads)
 	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%
 	index = (np.abs(survivalvalues-100*(1-budgetting_confidence_policy))).argmin()
 	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
@@ -54,23 +54,23 @@ def survival_value_extractor(sim_costs, budgetting_confidence_policy, iterations
     
 
 #define the function that returns the expected value for a given budgetting confidence policy
-def expected_value_extractor(sim_npv, iterations):
+def expected_value_extractor(sim_cost, iterations):
     #calculate the cumulative sum of the values of the histogram
-	valuesplus, base = np.histogram(sim_npv, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
+	valuesplus, base = np.histogram(sim_cost, bins=iterations) #it returns as many values as specified in bins valuesplus are frequencies, base the x-axis limits for the bins 
 	cumulativeplus = np.cumsum(valuesplus)
-	survivalvalues = 100*(len(sim_npv)-cumulativeplus)/len(sim_npv)
+	survivalvalues = 100*(len(sim_cost)-cumulativeplus)/len(sim_cost)
 	#return index of item from survivalvalues that is closest to "1-budgetting_confidence_policy" typ.20%. Here I place 50% because I want to use the median=avg=E()
 	index = (np.abs(survivalvalues-100*(1-.5))).argmin()
 	#return value at base (which is indeed the durations that correspond to survival level) that matches the index
-	budgetednpv = np.round(base[index],2)
-	return budgetednpv
+	budgetedcost = np.round(base[index],2)
+	return budgetedcost
 
 
 
 def simulate(arrayforsim, iterat):
     #initialize the arrays that will store the results of the MonteCarlo Simulation
-    mcs_costs = []
-    mcs_NPV = []
+    mcs_leads = []
+    mcs_cost = []
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
@@ -85,14 +85,14 @@ def simulate(arrayforsim, iterat):
             # open ten different ODS files and store the results in a list after computing the CPM and MCS 
             # (restore to only last line if old version)
             if i < 9:
-                filename = "RND_Schedules/riskreg_0" + str(i+1) + ".ods"
+                filename = "RND_Schedules/mediaplan_0" + str(i+1) + ".ods"
             else:
-                filename = "RND_Schedules/riskreg_" + str(i+1) + ".ods"
+                filename = "RND_Schedules/mediaplan_" + str(i+1) + ".ods"
             #print(filename)
             myriskreg = read_ods(filename, 1) # was myriskreg = read_ods(filename, "Sheet1")
 
-            #compute MonteCarlo Simulation and store the results in an array called "sim1_costs"
-            sim_costs = MCS_CPM_RR(mydata, myriskreg, iterat)
+            #compute MonteCarlo Simulation and store the results in an array called "sim1_leads"
+            sim_leads = MCS_CPM_RR(mydata, myriskreg, iterat)
             cashflows = []
             # open the file that contains the expected cash flows, and extract the ones for the project i (located in row i)
             with open('RND_Schedules/expected_cash_flows.txt') as f:
@@ -103,48 +103,48 @@ def simulate(arrayforsim, iterat):
                 # split the line by whitespace and convert each element to a float
                 cashflows = list(map(float, line.split()))
 
-            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV"
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_cost"
             #print(cashflows)
-            sim_NPV = MCS_NPV(cashflows, iterat)
-            #print(sim_NPV)
+            sim_cost = MCS_cost(cashflows, iterat)
+            #print(sim_cost)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
-            mcs_costs.append(sim_costs)
-            mcs_NPV.append(sim_NPV)
-            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
-            #mcs_npvs1.append(sim1_NPV)
-            #compute the median of the NPV results
-            median_npv = expected_value_extractor(sim_NPV, iterat)
+            mcs_leads.append(sim_leads)
+            mcs_cost.append(sim_cost)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
+            #mcs_costs1.append(sim1_cost)
+            #compute the median of the cost results
+            median_cost = expected_value_extractor(sim_cost, iterat)
         else:
             # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
-            # mcs_NPV.append([0.0])   
-            # mcs_costs.append(np.zeros(iterat))
+            # mcs_cost.append([0.0])   
+            # mcs_leads.append(np.zeros(iterat))
             # do nothing and go to the next iteration
             pass
          
             
 
-    # print ("mcs_costs", mcs_costs)
-    # print ("mcs_NPV", mcs_NPV)
-    return(mcs_costs, mcs_NPV)
+    # print ("mcs_leads", mcs_leads)
+    # print ("mcs_cost", mcs_cost)
+    return(mcs_leads, mcs_cost)
 
-# compute the median of the NPV results
-def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies, numberofprojects):
+# compute the median of the cost results
+def pointestimate(mcs_leads, mcs_cost, budgetting_confidence_policies, numberofprojects):
     #initialize the arrays that will store the point estimates with size nr of projects x nr of budgetting confidence policies
-    bdgtperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
-    npvperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
+    leadsperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
+    costperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
     for i in range(numberofprojects):
-        median_npv = round(expected_value_extractor(mcs_NPV[i], len(mcs_NPV[i])),0)
+        median_cost = round(expected_value_extractor(mcs_cost[i], len(mcs_cost[i])),0)
         for j in range(len(budgetting_confidence_policies)):
             budgetting_confidence_policy = budgetting_confidence_policies[j]
             #extract the survival value from the array sim_duration that corresponds to the budgetting confidence policy
-            survival_value = survival_value_extractor(mcs_costs[i], budgetting_confidence_policy, len(mcs_costs[i]))
+            survival_value = survival_value_extractor(mcs_leads[i], budgetting_confidence_policy, len(mcs_leads[i]))
             #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
-            bdgtperproject_matrix[i][j]=survival_value
-            npvperproject_matrix[i][j]=median_npv/1000-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
-    # print ("bdgtperproject_matrix", bdgtperproject_matrix)
-    # print ("npvperproject_matrix", npvperproject_matrix)
-    return(bdgtperproject_matrix, npvperproject_matrix)
+            leadsperproject_matrix[i][j]=survival_value
+            costperproject_matrix[i][j]=median_cost/1000-survival_value #(was costperproject_matrix[i][j]=median_cost-survival_value and we must convert into thousand euros)
+    # print ("leadsperproject_matrix", leadsperproject_matrix)
+    # print ("costperproject_matrix", costperproject_matrix)
+    return(leadsperproject_matrix, costperproject_matrix)
 
 # modify MCS results to reflect the correlation matrix  
 def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):  
@@ -270,8 +270,8 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
 
 def calc_det(arrayforsim, iterat):
     #initialize the arrays that will store the results of the MonteCarlo Simulation
-    det_costs = []
-    det_NPV = []
+    det_leads = []
+    det_cost = []
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
@@ -292,8 +292,8 @@ def calc_det(arrayforsim, iterat):
             #print(filename)
             myriskreg = read_ods(filename, 1) # was myriskreg = read_ods(filename, "Sheet1")
 
-            #compute MonteCarlo Simulation and store the results in an array called "sim1_costs"
-            sim_costs = MCS_CPM_RRdet(mydata, myriskreg, iterat)
+            #compute MonteCarlo Simulation and store the results in an array called "sim1_leads"
+            sim_leads = MCS_CPM_RRdet(mydata, myriskreg, iterat)
             cashflows = []
             # open the file that contains the expected cash flows, and extract the ones for the project i (located in row i)
             with open('RND_Schedules/expected_cash_flows.txt') as f:
@@ -304,25 +304,25 @@ def calc_det(arrayforsim, iterat):
                 # split the line by whitespace and convert each element to a float
                 cashflows = list(map(float, line.split()))
 
-            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV", also 
-            sim_NPV = MCS_NPVdet(cashflows, iterat)
-            print(sim_NPV)
-            # substract sim_costs from all the values inside the array
-            for j in range(len(sim_NPV)):
-                sim_NPV[j] = sim_NPV[j] - sim_costs[j]
-            #print(sim_NPV)
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_cost", also 
+            sim_cost = MCS_COSTdet(cashflows, iterat)
+            print(sim_cost)
+            # substract sim_leads from all the values inside the array
+            for j in range(len(sim_cost)):
+                sim_cost[j] = sim_cost[j] - sim_leads[j]
+            #print(sim_cost)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
-            det_costs.append(sim_costs)
-            det_NPV.append(sim_NPV)
-            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
-            #mcs_npvs1.append(sim1_NPV)
-            #compute the median of the NPV results
+            det_leads.append(sim_leads)
+            det_cost.append(sim_cost)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
+            #mcs_costs1.append(sim1_cost)
+            #compute the median of the cost results
         else:
             # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
-            # mcs_NPV.append([0.0])   
-            # mcs_costs.append(np.zeros(iterat))
+            # mcs_cost.append([0.0])   
+            # mcs_leads.append(np.zeros(iterat))
             # do nothing and go to the next iteration
             pass
 
-    return(det_costs, det_NPV)
+    return(det_leads, det_cost)

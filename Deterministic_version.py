@@ -35,7 +35,7 @@ print("bdgtperproject_matrix: ", bdgtperproject_matrix)
 npvperproject_matrix = det_results1[1]
 print("npvperproject_matrix: ", npvperproject_matrix)
 # define the budget constraint
-maxbdgt = 10800
+maxbdgt = 8000
 
 # copy the array with all MCS results  
 det_df0 = pd.DataFrame(data=det_results1[0]).T  
