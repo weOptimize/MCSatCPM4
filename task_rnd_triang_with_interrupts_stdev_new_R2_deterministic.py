@@ -218,6 +218,7 @@ def computeRR(myriskreg):
 			
 def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 	durationsplus = []
+	durations = []
 	callsperday= []
 	callarray= []
 	durat = 0
@@ -230,16 +231,20 @@ def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 		computeCPM(mydata)
 		durat = round(np.max(mydata['EF']),2)
 		totaldays = math.ceil(durat)
-		callsperday = simulatearrivals(5, totaldays)
+		#callsperday = simulatearrivals(5, totaldays)
 		#sum all values at totalcalls
-		totalcalls = sum(callsperday)
-		callarray = rng.uniform(0.02, 0.06, totalcalls)
-		duratplus = round(durat + sum(callarray),2)
+		totalcalls = 5 * totaldays # was totalcalls = sum(callsperday)
+		# rng = np.random.default_rng()
+		# callarray = rng.uniform(0.02, 0.06, totalcalls)
+		totalextratime = totalcalls * 0.04
+		duratplus = round(durat + totalextratime)
+		durationsplus.append(duratplus)
+		durations.append(durat)
 		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
 		impact_RR = computeRR(myriskreg)
-		total_impact_RR = impact_RR[0]
+		#total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = round((duratplus * 3 + total_impact_RR + baseline_cost),3)
+		costoftime = duratplus * 3 + 0 + baseline_cost #there is no total_impact_RR
 		projectcost.append(costoftime)
 		
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION

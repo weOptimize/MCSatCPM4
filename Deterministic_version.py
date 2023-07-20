@@ -29,10 +29,10 @@ det_results1 = calc_det(candidatearray, 1)
 timestamps.append(('First deterministic point estimate of budgets and NPV for each project', time.time()))
 
 # extract first column of the matrix to get the budgeted costs of each project and store it in bdgtperproject_matrix
-bdgtperproject_matrix = det_results1[0]
+bdgtperproject_matrix = np.round(det_results1[0],2)
 print("bdgtperproject_matrix: ", bdgtperproject_matrix)
 # extract second column of the matrix to get the NPV of each project and store it in npvperproject_matrix
-npvperproject_matrix = det_results1[1]
+npvperproject_matrix = np.round(det_results1[1],2)
 print("npvperproject_matrix: ", npvperproject_matrix)
 # define the budget constraint
 maxbdgt = 10800
