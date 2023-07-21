@@ -34,7 +34,7 @@ print("bdgtperproject_matrix: ", bdgtperproject_matrix)
 # extract second column of the matrix to get the NPV of each project and store it in npvperproject_matrix
 # npvperproject_matrix = np.round(det_results1[1],2)
 # Correct NPV, considering budget of project
-npvperproject_matrix = np.round(det_results1[1],2) - np.round(det_results1[0],2)/1000
+npvperproject_matrix = np.round(det_results1[1],2)
 print("npvperproject_matrix: ", npvperproject_matrix)
 # define the budget constraint
 maxbdgt = 10800
