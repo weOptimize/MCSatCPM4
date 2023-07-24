@@ -141,7 +141,7 @@ def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies, numberofpr
             survival_value = survival_value_extractor(mcs_costs[i], budgetting_confidence_policy, len(mcs_costs[i]))
             #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
             bdgtperproject_matrix[i][j]=survival_value
-            npvperproject_matrix[i][j]=median_npv/1000-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
+            npvperproject_matrix[i][j]=median_npv-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
     # print ("bdgtperproject_matrix", bdgtperproject_matrix)
     # print ("npvperproject_matrix", npvperproject_matrix)
     return(bdgtperproject_matrix, npvperproject_matrix)

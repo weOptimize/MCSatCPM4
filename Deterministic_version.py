@@ -33,7 +33,7 @@ bdgtperproject_matrix = np.round(det_results1[0],2)
 print("bdgtperproject_matrix: ", bdgtperproject_matrix)
 # extract second column of the matrix to get the NPV of each project and store it in npvperproject_matrix
 # npvperproject_matrix = np.round(det_results1[1],2)
-# Correct NPV, considering budget of project
+# Correct NPV, considering budget of project (therefore the substraction)
 npvperproject_matrix = np.round(det_results1[1],2)
 print("npvperproject_matrix: ", npvperproject_matrix)
 # define the budget constraint
@@ -89,10 +89,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv,
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 300 #was 180 #was 100 #was 50
+POPULATION_SIZE = 180 #was 300 #was 100 #was 50
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 800 #was 500 #was 200 #was 100
+MAX_GENERATIONS = 300 #was 800 #was 200 #was 100
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function

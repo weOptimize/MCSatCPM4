@@ -261,7 +261,7 @@ def MCS_NPVdet(cashflows, iterations):
 		#print(stochcashflows)
 		#compute the net present value of the project
 		npvvalue = npv(wacc, cashflows)
-		npvvalue = round(npvvalue,3)/1000 #convert to k€ so that we use same units as bdgt. ATTENTION: value without substracting the baseline cost
+		npvvalue = round(npvvalue,3) #ATTENTION: value without substracting the baseline cost, it is done in det_calculat at functions_v12
 		#print(npvvalue)
 		projectnpv.append(npvvalue)
 	return projectnpv

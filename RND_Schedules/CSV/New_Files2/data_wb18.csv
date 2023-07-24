@@ -1,0 +1,18 @@
+﻿DESCR,CODE,PREDECESSORS,LOW,HIGH,MODE
+Task 1,A,,3,4,4
+Task 2,B,,5,6,6
+Task 3,C,A,5,8,6
+Task 4,D,ABC,3,5,4
+Task 5,E,B,9,12,11
+Task 6,F,ABD,7,10,8
+Task 7,G,F,9,14,11
+Task 8,H,AG,2,3,3
+Task 9,I,EFH,3,4,4
+Task 10,J,CFH,2,3,3
+Task 11,K,,4,7,6
+Task 12,L,EGI,8,11,10
+Task 13,M,DI,6,9,8
+Task 14,N,BGI,4,7,6
+Task 15,O,D,4,5,5
+Task 16,P,DKN,2,4,3
+Task 17,Q,,7,10,9
