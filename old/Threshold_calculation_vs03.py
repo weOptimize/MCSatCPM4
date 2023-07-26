@@ -105,7 +105,7 @@ def threshold_calculation(df10r):
     iterations = 100
     budgetting_confidence_policies = [0.75]
 
-    print ("************ STARTING STAGE 2 (long MCS) **********")
+    print ("************ Checking Lower Threshold **********")
     #second simulation to get all cdfs for cost & benefits after optimization step (may_update: was 1000)
     mcs_results2 = simulate(portfolio_projection,iterations)
 
@@ -232,10 +232,50 @@ def threshold_calculation(df10r):
     budgets_escalar = finalsol_df[2]
     budgets.append(budgets_escalar)
     #budgets.append(finalsol_df[2])
+    print ("Indexes of selected projects at deterministic portfolio: ", zipped_projection_indexes)
     print("portfolio_results: ", portfolio_results)
     print("npv_results: ", npv_results)
     print("budgets: ", budgets)
 
+    # from the projects at the selected portfolio, extract the costs and benefits of each project
+    # and store them in a matrix, together with the project indexes
+    
+    # set the print options to suppress scientific notation
+    np.set_printoptions(suppress=True)
 
+    # create an array with the indexes of the projects in the portfolio
+    indexes_array = np.zeros((len(zipped_projection_indexes)))
+    for i in range(len(zipped_projection_indexes)):
+        indexes_array[i] = zipped_projection_indexes[i]
+
+    # convert the array content into integer values
+    indexes_array = indexes_array.astype(int)
+
+    # create an array  with the costs of the projects in the portfolio
+    costs_array = np.zeros((len(zipped_projection_indexes)))
+    for i in range(len(zipped_projection_indexes)):
+        costs_array[i] = round(bdgtperproject_matrix[i],3)
+
+    # create an array  with the npv of the projects in the portfolio
+    npv_array = np.zeros((len(zipped_projection_indexes)))
+    for i in range(len(zipped_projection_indexes)):
+        npv_array[i] = round(npvperproject_matrix[i],3)
+
+    #create an array with the cost/npv ratio of the projects in the portfolio
+    ratio_cost_npv_array = np.zeros((len(zipped_projection_indexes)))
+    for i in range(len(zipped_projection_indexes)):
+        ratio_cost_npv_array[i] = round(bdgtperproject_matrix[i]/npvperproject_matrix[i],2)
+
+    # create a matrix with the indexes, costs, npv and ratio of the projects in the deterministic portfolio
+    deterministic_matrix = np.zeros((len(zipped_projection_indexes),4))
+    for i in range(len(zipped_projection_indexes)):
+        deterministic_matrix[i] = [indexes_array[i], costs_array[i], npv_array[i], ratio_cost_npv_array[i]]
+    print("deterministic_matrix: ", deterministic_matrix)
+
+    # reorder all data in the matrix by the ratio cost/npv from lowest to highest
+    reordered_matrix = deterministic_matrix[deterministic_matrix[:,3].argsort()]
+    print("reordered_matrix: ", reordered_matrix)
+     
+     
 
 

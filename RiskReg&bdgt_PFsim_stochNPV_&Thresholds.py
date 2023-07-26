@@ -19,7 +19,7 @@ from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 from functions_for_simheuristic_v12 import *
 
 # import Threshold_calculation for plausibility check
-import Threshold_calculation_vs03
+import Threshold_calculation_vs04
 
 
 # create an empty list to store the timestamps and labels
@@ -55,8 +55,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 300
-iterations_finalMCS = 5000
+iterations = 100 #was 300
+iterations_finalMCS = 200 #was 5k
 
 #iterations = 10
 #iterations_finalMCS = 50
@@ -139,10 +139,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 180 #was 100 #was 50 #was 180
+POPULATION_SIZE = 50 #was 100 #was 50 #was 180
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 350 #was 500 #was 200 #was 100 #was 300 
+MAX_GENERATIONS = 100 #was 500 #was 200 #was 100 #was 300 
 HALL_OF_FAME_SIZE = 3
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -418,7 +418,7 @@ print("budgets: ", budgets)
 print("Total execution time: %s seconds" %((time.time() - start_time)))
 
 # execute the code inside Threshold_calculation vs03.py to check the thresholds for checking algorithm plausibility
-Threshold_calculation_vs03.threshold_calculation(df10r)
+Threshold_calculation_vs04.threshold_calculation(df10r)
 
 #separate the npv results from the solutions list
 #npv_results = [round(x[1][0], 0) for x in solutions]
@@ -569,20 +569,7 @@ plt.yticks(np.arange(0, 1.05, 0.1))
 plt.xticks(np.arange(5), df_portfolio_risk.columns)
 # Add y values to the plot
 for i, d in enumerate(df_portfolio_risk.values[0]):
-    plt.text(i-0.2, d+0.01, str(round(
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-d,2)))
+    plt.text(i-0.2, d+0.01, str(round(d,2)))
 plt.grid(axis='y')
 plt.show()
 
