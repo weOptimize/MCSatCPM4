@@ -19,7 +19,7 @@ from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 from functions_for_simheuristic_v12 import *
 
 # import Threshold_calculation for plausibility check
-import Threshold_calculation_vs04
+import old.Threshold_calculation_vs04 as Threshold_calculation_vs04
 
 
 # create an empty list to store the timestamps and labels
@@ -55,8 +55,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 100 #was 300
-iterations_finalMCS = 200 #was 5k
+iterations = 300 #was 300
+iterations_finalMCS = 5000 #was 5k
 
 #iterations = 10
 #iterations_finalMCS = 50
@@ -139,11 +139,11 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 50 #was 100 #was 50 #was 180
+POPULATION_SIZE = 180 #was 100 #was 50 #was 180
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 100 #was 500 #was 200 #was 100 #was 300 
-HALL_OF_FAME_SIZE = 3
+MAX_GENERATIONS = 300 #was 500 #was 200 #was 100 #was 300 
+HALL_OF_FAME_SIZE = 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
 creator.create("FitnessMax", base.Fitness, weights=(100000.0, 1.0))
