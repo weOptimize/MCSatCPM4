@@ -151,10 +151,10 @@ def threshold_calculation(df10r):
         reduced_deterministic_portfolios[i][zipped_projection_indexes[i]] = 0
         # multiply by zero the element that corresponds to another random position inside zipped projection indexes
         # this random position must be different from the previous one
-        z = random.randint(0, len(zipped_projection_indexes)-1)
-        if z == i:
-            z = random.randint(0, len(zipped_projection_indexes)-1)
-        reduced_deterministic_portfolios[i][zipped_projection_indexes[z]] = 0
+        # z = random.randint(0, len(zipped_projection_indexes)-1)
+        # if z == i:
+        #     z = random.randint(0, len(zipped_projection_indexes)-1)
+        # reduced_deterministic_portfolios[i][zipped_projection_indexes[z]] = 0
 
       
     print("reduced_deterministic_portfolios: ", reduced_deterministic_portfolios)
@@ -176,7 +176,8 @@ def threshold_calculation(df10r):
 
 # ************** checking lower threshold ****************
 def simulatescenario(df10r, portfolio_projection, projectselection):
-    iterations = 1000
+    iterations = 200
+    maxbdgt = 10800
     budgetting_confidence_policies = [0.75]
 
     print ("************ Checking Lower Threshold **********")
@@ -278,6 +279,10 @@ def simulatescenario(df10r, portfolio_projection, projectselection):
         for j in range(pf_cost20r.__len__()):
             if pf_cost20r[j] > maxbdgt:
                 count = count + 1
+                # if the count is a multiple of 100, print the cost of the portfolio and the count
+                # if count % 100 == 0:
+                #    print("portfolio cost:", pf_cost20r[j])
+                #    print("count: ", count)
         #array storing the portfolio risk not to exceed 10.800 Mio.€, as per-one risk units
         pf_conf2[i] = 1-count/iterations
 

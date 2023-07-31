@@ -40,7 +40,7 @@ proj_overview['Normalized_days'] = proj_overview['Total_days_Sum'] / proj_overvi
 # Generate random cash flows for 4 years with a weak correlation to Total_days_Sum
 cash_flows = []
 for index, row in proj_overview.iterrows():
-    base_cash_flow = round(row['Normalized_days'],2) * 1500  # Arbitrary scaling factor
+    base_cash_flow = round(row['Normalized_days'],2) * 1200  # 'Arbitrary' scaling factor
     year_1 = int(base_cash_flow * (1 + round(np.random.uniform(0, 0.12),2)))
     year_2 = int(base_cash_flow * (1 + round(np.random.uniform(0.1, 0.23),2)))
     year_3 = int(base_cash_flow * (1 + round(np.random.uniform(0.2, 0.35),2)))

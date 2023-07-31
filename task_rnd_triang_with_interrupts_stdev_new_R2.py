@@ -238,7 +238,7 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 		impact_RR = computeRR(myriskreg)
 		total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 3 + total_impact_RR + baseline_cost
+		costoftime = duratplus * 5 + total_impact_RR + baseline_cost #was 3
 		projectcost.append(costoftime)
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
@@ -246,11 +246,11 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 def MCS_NPV(cashflows, iterations):
 	projectnpv = []
 	for i in range(iterations):
-		wacc = np.random.normal(0.1,0.06)
+		wacc = np.random.normal(0.1,0.01) # was 0.06 stdev
 		#convert cashflows into a numpy array
 		cashflows = np.array(cashflows)
 		#substitute the cashflows stored by a stochastic variable that follows a normal distribution with mean equal to the cashflow and standard deviation equal to the cashflow*0.002
-		stochcashflows = np.random.normal(cashflows, cashflows*0.2)
+		stochcashflows = np.random.normal(cashflows, cashflows*0.05) #was *0.2 stdev
 		# transpose the array
 		stochcashflows = stochcashflows.T
 		#print(stochcashflows)
@@ -294,7 +294,7 @@ def MCS_CPM_PF(mydata, iterations):
 		durations.append(durat)
 
 	#print(durations) - noshow porque sólo me interesa durationsplus
-	#print(durationsplus) - IMPORTANTE - este es el primero a mostrar si quieres ver las duraciones
+	print(durationsplus) #- IMPORTANTE - este es el primero a mostrar si quieres ver las duraciones
 
 	plt.hist(durationsplus, bins = 50) 
 	plt.title ("Histogram of CPM durations WITH interruptions")

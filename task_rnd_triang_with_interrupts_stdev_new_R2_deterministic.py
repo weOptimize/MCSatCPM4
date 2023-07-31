@@ -244,7 +244,7 @@ def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 		impact_RR = computeRR(myriskreg)
 		#total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 3 + 0 + baseline_cost #there is no total_impact_RR
+		costoftime = duratplus * 5 + 0 + baseline_cost #there is no total_impact_RR
 		projectcost.append(costoftime)
 		
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
