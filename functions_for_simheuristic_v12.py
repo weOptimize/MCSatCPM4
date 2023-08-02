@@ -152,7 +152,7 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     #check the parameters of beta distribution for each of the mcs_results  
     betaparams = []  
     for i in range(nrcandidates):  
-        f = Fitter(mcs_results[0][i], distributions=['beta'])  
+        f = Fitter(mcs_results[0][i], distributions=['beta'])
         f.fit(progress=False)
         betaparam=(f.fitted_param["beta"])  
         betaparams.append(betaparam)  

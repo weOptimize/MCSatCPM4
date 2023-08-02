@@ -14,6 +14,7 @@ from deap import base, creator, tools, algorithms
 #from scipy.stats import rv_continuous, rv_histogram, norm, uniform, multivariate_normal, beta
 #from fitter import Fitter, get_common_distributions, get_distributions
 import seaborn as sns
+import sys
 
 #import created scripts:
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
@@ -25,6 +26,14 @@ import Threshold_calculation_vs05
 
 # create an empty list to store the timestamps and labels
 timestamps = []
+
+# Redirect optput to a file instead of Terminal
+# Save current standard output
+stdout = sys.stdout
+
+# Redirect standard output to a file
+sys.stdout = open('output.txt', 'w')
+
 
 start_time = time.time()
 timestamps.append(('t = 0', time.time()))
@@ -56,11 +65,11 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-#iterations = 500 #was 300 #was 500/20
-#iterations_finalMCS = 5000 #was 5k/100
+iterations = 500 #was 300 #was 500/20
+iterations_finalMCS = 5000 #was 5k/100
 
-iterations = 30
-iterations_finalMCS = 50
+#iterations = 30
+#iterations_finalMCS = 50
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -163,10 +172,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 18 #was 100 #was 50 #was 180/30
+POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 30 #was 500 #was 200 #was 100 #was 300 
+MAX_GENERATIONS = 300 #was 500 #was 200 #was 100 #was 300 
 HALL_OF_FAME_SIZE = 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
