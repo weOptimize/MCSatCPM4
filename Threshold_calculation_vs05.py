@@ -230,6 +230,16 @@ def threshold_calculation(df10r, bestsol_size):
     reduced_deterministic_portfolios_results_Hi_confidence.sort(key=lambda x: x[2], reverse=True)
     print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence)
 
+    #extract the first element of the list that meets a criteria of confidence level higher than 0.90 and print it
+    for i in range(len(reduced_deterministic_portfolios_results_Hi_confidence)):
+        if reduced_deterministic_portfolios_results_Hi_confidence[i][3][0] > 0.90:
+            print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence[i])
+            break
+
+    
+
+    
+
 
 
 
