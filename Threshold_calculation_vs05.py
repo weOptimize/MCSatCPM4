@@ -1,6 +1,9 @@
 import numpy as np
 import cplex  
 import math
+import os
+import sys
+
 
 
 from task_rnd_triang_with_interrupts_stdev_new_R2_deterministic import *
@@ -101,6 +104,7 @@ def threshold_calculation(df10r, bestsol_size):
     projectselection = []
     projectselection.append(deterministic_portfolio)
 
+    print ("************ Checking Lower Threshold **********")
     simulatescenario(df10r, deterministic_portfolio, projectselection, hi_iterations)
 
     # take the indexes of the projects in the deterministic portfolio and store them in a list
@@ -183,15 +187,25 @@ def threshold_calculation(df10r, bestsol_size):
     # the list must include the index of the removed project, the cost of the portfolio, the npv of
     # the portfolio, and the confidence level of each reduced deterministic portfolio
 
+
     # create a list to store the results of each reduced deterministic portfolio
     reduced_deterministic_portfolios_results = []
+    count_Hiconf = 0
     for i in range(len(reduced_deterministic_portfolios)):
         # reset array projectselection so that I can include the reduced deterministic portfolio
         projectselection = []
         projectselection.append(reduced_deterministic_portfolios[i])
         reduced_deterministic_portfolios_results.append(simulatescenario(df10r, reduced_deterministic_portfolios[i], projectselection, lo_iterations))
+        # count the number of results that have a confidence level higher than 0.75
+        if reduced_deterministic_portfolios_results[i][3][0] > 0.75:
+            count_Hiconf += 1
+
+
     # print only the first 5 elements from reduced_deterministic_portfolios_results and last 5 results
     # and inform the total amount of results
+
+
+    print ("Total number of High Confidence (>65%) results: ", count_Hiconf)
     print("reduced_deterministic_portfolios_results: ")
     for i in range(5):
         print(reduced_deterministic_portfolios_results[i])
@@ -201,16 +215,19 @@ def threshold_calculation(df10r, bestsol_size):
     print("Total number of results: ", len(reduced_deterministic_portfolios_results))
     print("reduced_deterministic_portfolios_results: ", reduced_deterministic_portfolios_results)
     
-    # extract all results that resulted in a confidence level higher than 0.65
+
+
+    # extract all results that resulted in a confidence level higher than 0.75
     # and iterate over such results with iter = 200 iterations
     # and then store the results in a list in descending order
     reduced_deterministic_portfolios_results_Hi_confidence = []
     for i in range(len(reduced_deterministic_portfolios_results)):
-        if reduced_deterministic_portfolios_results[i][3][0] > 0.65:
+        if reduced_deterministic_portfolios_results[i][3][0] > 0.75:
             reduced_deterministic_portfolios_results_Hi_confidence.append(simulatescenario(df10r, reduced_deterministic_portfolios[i], projectselection, hi_iterations))
             print (len(reduced_deterministic_portfolios_results_Hi_confidence))
-    #sort in descending order of confidence level
-    reduced_deterministic_portfolios_results_Hi_confidence.sort(key=lambda x: x[3], reverse=True)
+
+    #sort in descending order of Net Present Value
+    reduced_deterministic_portfolios_results_Hi_confidence.sort(key=lambda x: x[2], reverse=True)
     print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence)
 
 
@@ -225,7 +242,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     maxbdgt = 10800
     budgetting_confidence_policies = [0.75]
 
-    print ("************ Checking Lower Threshold **********")
+
     #second simulation to get all cdfs for cost & benefits after optimization step (may_update: was 1000)
     mcs_results2 = simulate(portfolio_projection,iterations)
 
@@ -355,7 +372,8 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     # print("portfolio_results: ", portfolio_results)
     # print("npv_results: ", npv_results)
     # print("budgets: ", budgets)
-
+    
+    
     return(zipped_projection_indexes, budgets, npv_results, pf_conf2)
 
     # from the projects at the selected portfolio, extract the costs and benefits of each project
