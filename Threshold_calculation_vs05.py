@@ -16,8 +16,8 @@ portfolio_projection = []
 
 # create funtion to be called from another python file
 def threshold_calculation(df10r, bestsol_size):
-    lo_iterations = 20
-    hi_iterations = 100
+    lo_iterations = 50
+    hi_iterations = 200
     # array to store all found solutions
       
 
