@@ -16,8 +16,8 @@ portfolio_projection = []
 
 # create funtion to be called from another python file
 def threshold_calculation(df10r, bestsol_size):
-    lo_iterations = 50
-    hi_iterations = 200
+    lo_iterations = 20
+    hi_iterations = 100
     # array to store all found solutions
       
 
@@ -149,23 +149,33 @@ def threshold_calculation(df10r, bestsol_size):
 
 # calculate how many combinations are when there are as many elements as the number of projects
 # in the deterministic portfolio and the groups have the size of bestsol_size
-    n_combinations = int(math.factorial(len(zipped_projection_indexes)) / (math.factorial(bestsol_size) * math.factorial(len(zipped_projection_indexes) - bestsol_size)))
-
-    # create a list to store the reduced deterministic portfolios sized as indicated in bestsol_size
+    n = len(zipped_projection_indexes) - bestsol_size
+    n_combinations = 0
+    i=0
     reduced_deterministic_indexes = list(combinations(zipped_projection_indexes, bestsol_size))
+    n_combinations = int(math.factorial(len(zipped_projection_indexes)) /
+                        (math.factorial(bestsol_size) * math.factorial(len(zipped_projection_indexes) - bestsol_size)))
+    for i in range(1, n):
+        k = bestsol_size + i
+        n_combinations += int(math.factorial(len(zipped_projection_indexes)) / 
+                            (math.factorial(k) * math.factorial(len(zipped_projection_indexes) - k)))
+        # add the new combinations to the existing list
+        reduced_deterministic_indexes.extend(list(combinations(zipped_projection_indexes, k)))
 
-    # create a list to store the reduced deterministic portfolios sized as the number of projects in the deterministic portfolio
+    # create a list to store the reduced deterministic portfolios sized as the number of subgroup combinations
     reduced_deterministic_portfolios = [0] * n_combinations
 
-    for i in range(n_combinations):
+    for i in range(len(reduced_deterministic_portfolios)):
         # copy the deterministic portfolio inside the i-th element of the reduced_deterministic_portfolios list
         reduced_deterministic_portfolios[i] = deterministic_portfolio.copy()
-        # multiply by zero the elements that corresponds to the positions of zipped projection indexes inside
-        # the corresponding row at reduced_deterministic_indexes
-        # identify what projection indexes are missing
-        missing_projection_indexes = [x for x in zipped_projection_indexes if x not in reduced_deterministic_indexes[i]]
-        for j in range(len(missing_projection_indexes)):
-            reduced_deterministic_portfolios[i][missing_projection_indexes[j]] = 0
+        for j in range(n):
+            # multiply by zero the elements that corresponds to the positions of zipped projection indexes inside
+            # the corresponding row at reduced_deterministic_indexes
+            # identify what projection indexes are missing
+            missing_projection_indexes = [x for x in zipped_projection_indexes if x not in reduced_deterministic_indexes[i]]
+            for k in range(len(missing_projection_indexes)):
+                reduced_deterministic_portfolios[i][missing_projection_indexes[k]] = 0
+        
       
     # print("reduced_deterministic_portfolios: ", reduced_deterministic_portfolios)
     
@@ -175,20 +185,30 @@ def threshold_calculation(df10r, bestsol_size):
 
     # create a list to store the results of each reduced deterministic portfolio
     reduced_deterministic_portfolios_results = []
-    for i in range(len(zipped_projection_indexes)):
+    for i in range(len(reduced_deterministic_portfolios)):
         # reset array projectselection so that I can include the reduced deterministic portfolio
         projectselection = []
         projectselection.append(reduced_deterministic_portfolios[i])
         reduced_deterministic_portfolios_results.append(simulatescenario(df10r, reduced_deterministic_portfolios[i], projectselection, lo_iterations))
-    # print("reduced_deterministic_portfolios_results: ", reduced_deterministic_portfolios_results)
-
-    # extract all results that resulted in a confidence level higher than 0.5
+    # print only the first 5 elements from reduced_deterministic_portfolios_results and last 5 results
+    # and inform the total amount of results
+    print("reduced_deterministic_portfolios_results: ")
+    for i in range(5):
+        print(reduced_deterministic_portfolios_results[i])
+    print("...")
+    for i in range(len(reduced_deterministic_portfolios_results)-5, len(reduced_deterministic_portfolios_results)):
+        print(reduced_deterministic_portfolios_results[i])
+    print("Total number of results: ", len(reduced_deterministic_portfolios_results))
+    print("reduced_deterministic_portfolios_results: ", reduced_deterministic_portfolios_results)
+    
+    # extract all results that resulted in a confidence level higher than 0.65
     # and iterate over such results with iter = 200 iterations
     # and then store the results in a list in descending order
     reduced_deterministic_portfolios_results_Hi_confidence = []
     for i in range(len(reduced_deterministic_portfolios_results)):
-        if reduced_deterministic_portfolios_results[i][3][0] > 0.75:
+        if reduced_deterministic_portfolios_results[i][3][0] > 0.65:
             reduced_deterministic_portfolios_results_Hi_confidence.append(simulatescenario(df10r, reduced_deterministic_portfolios[i], projectselection, hi_iterations))
+            print (len(reduced_deterministic_portfolios_results_Hi_confidence))
     #sort in descending order of confidence level
     reduced_deterministic_portfolios_results_Hi_confidence.sort(key=lambda x: x[3], reverse=True)
     print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence)
@@ -315,7 +335,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
     # order the dataframe by the portfolio npv, starting with the highest npv
     finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
-    print ("Final Solution: ", finalsol_df)
+    # print ("Final Solution: ", finalsol_df)
 
     npv_results = []
     budgets = []
@@ -331,10 +351,10 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     budgets_escalar = finalsol_df[2]
     budgets.append(budgets_escalar)
     #budgets.append(finalsol_df[2])
-    print ("Indexes of selected projects at deterministic portfolio: ", zipped_projection_indexes)
-    print("portfolio_results: ", portfolio_results)
-    print("npv_results: ", npv_results)
-    print("budgets: ", budgets)
+    # print ("Indexes of selected projects at deterministic portfolio: ", zipped_projection_indexes)
+    # print("portfolio_results: ", portfolio_results)
+    # print("npv_results: ", npv_results)
+    # print("budgets: ", budgets)
 
     return(zipped_projection_indexes, budgets, npv_results, pf_conf2)
 

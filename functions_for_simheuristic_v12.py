@@ -13,6 +13,7 @@ from copulas.multivariate import GaussianMultivariate
 from scipy.stats import rv_continuous, rv_histogram, norm, uniform, multivariate_normal, beta
 from fitter import Fitter, get_common_distributions, get_distributions
 
+
 #import created scripts:
 from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 from task_rnd_triang_with_interrupts_stdev_new_R2_deterministic import *
@@ -152,7 +153,7 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     betaparams = []  
     for i in range(nrcandidates):  
         f = Fitter(mcs_results[0][i], distributions=['beta'])  
-        f.fit()  
+        f.fit(progress=False)
         betaparam=(f.fitted_param["beta"])  
         betaparams.append(betaparam)  
   
@@ -307,7 +308,7 @@ def calc_det(arrayforsim, iterat):
 
             # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV", also 
             sim_NPV = MCS_NPVdet(cashflows, iterat)
-            print(sim_NPV)
+            # print(sim_NPV)
             # substract sim_costs from all the values inside the array
             for j in range(len(sim_NPV)):
                 sim_NPV[j] = sim_NPV[j] - sim_costs[j]

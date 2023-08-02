@@ -59,7 +59,7 @@ nrcandidates = 20
 #iterations = 500 #was 300 #was 500/20
 #iterations_finalMCS = 5000 #was 5k/100
 
-iterations = 10
+iterations = 30
 iterations_finalMCS = 50
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
