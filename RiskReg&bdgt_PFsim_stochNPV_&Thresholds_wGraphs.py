@@ -305,8 +305,9 @@ print ("Number of candidate projects for stage 2: ", projected_candidates)
 
 print ("************ STARTING STAGE 2 (long MCS) **********")
 #second simulation to get all cdfs for cost & benefits after optimization step (may_update: was 1000)
-mcs_results2 = simulate(portfolio_projection,iterations_finalMCS)
-
+mcs_results2 = simulate(portfolio_projection,iterations_finalMCS) # we pass portfolio_projection to simulate only the selected projects
+# we obtain a matrix sized (iterations_finalMCS, 2) where mcs_results2[0] corresponds to the project costs
+# and mcs_results2[1] to the project benefits (NPV) each of them with "iterations_finalMCS" rows
 
 # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV_SINdescontarCOSTE)
 x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
@@ -338,7 +339,8 @@ print("size of mcs_results2", len(mcs_results2))
 
 # print("mcs_results2 (input para correlacionar): ", mcs_results2)
 
-# for each of the options obtained in projectselection, calculate the total portfolio npv and the portfolio budget based on the information from x_perproj_matrix
+# for each of the options obtained in projectselection, calculate the total portfolio npv and the portfolio budget based on the information
+# from x_perproj_matrix
 npv_results = [0] * len(projectselection) # as many as len(projectselection) because we have one npv per item in HoF
 budgets = [0] * len(projectselection)
 pf_conf2 = [0] * len(projectselection)
@@ -352,9 +354,12 @@ widened_df20r = widened_df20r.reindex(range(iterations_finalMCS))
 widened_df20r.iloc[:, :] = 0
 
 df20r = correlatedMCS(mcs_results2, iterations_finalMCS, projected_candidates, zipped_projection_indexes)
-# print("df20r: ", df20r)
+#we obtain a matrix sized (iterations_finalMCS, 2) where df20r[0] corresponds to the project costs
+# and df20r[1] to the project benefits (NPV) each of them with "iterations_finalMCS" rows
 
-# pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix and widened_npvperproject_matrix
+
+# pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix
+# and widened_npvperproject_matrix
 # The location of the values to be picked is available in zipped_projection_indexes
 j=0
 for i in range(nrcandidates):
