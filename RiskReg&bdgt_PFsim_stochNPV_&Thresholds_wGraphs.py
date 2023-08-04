@@ -65,11 +65,11 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 500 #was 300 #was 500/20
-iterations_finalMCS = 5000 #was 5k/100
+#iterations = 500 #was 300 #was 500/20
+#iterations_finalMCS = 5000 #was 5k/100
 
-#iterations = 30
-#iterations_finalMCS = 50
+iterations = 30
+iterations_finalMCS = 50
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -152,10 +152,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     #print(maxcost10r)
     #count how many results were higher than maxbdgt
     count = 0
-    for i in range(pf_cost10r.__len__()):
+    for i in range(pf_cost10r.__len__()): #this is repeated as much as values are in the MCS results for project cost
         if pf_cost10r[i] > maxbdgt:
             count = count + 1
-    #array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
+    #array storing the portfolio risk not to exceed 10.800 Mio.€, as per-one risk units
     portfolio_confidence = 1-count/iterations
     #print("portfolio confidence:")
     #print(portfolio_confidence)
@@ -172,10 +172,10 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
+POPULATION_SIZE = 18 #was 100 #was 50 #was 180/30
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 300 #was 500 #was 200 #was 100 #was 300 
+MAX_GENERATIONS = 30 #was 500 #was 200 #was 100 #was 300 
 HALL_OF_FAME_SIZE = 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -308,7 +308,7 @@ print ("************ STARTING STAGE 2 (long MCS) **********")
 mcs_results2 = simulate(portfolio_projection,iterations_finalMCS)
 
 
-# mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
+# mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV_SINdescontarCOSTE)
 x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
 # print ("x_perproj_matrix2: ", x_perproj_matrix2)
 
@@ -454,8 +454,10 @@ print("budgets: ", budgets)
 #*** Total execution time
 print("Total execution time: %s seconds" %((time.time() - start_time)))
 
-# execute the code inside Threshold_calculation vs03.py to check the thresholds for checking algorithm plausibility
-Threshold_calculation_vs05.threshold_calculation(df10r, bestsol_size)
+# execute the code inside Threshold_calculation vs05.py to check the thresholds for
+# checking algorithm plausibility and extract the two deterministic portfolios obtained
+threshold_sols = Threshold_calculation_vs05.threshold_calculation(df10r, bestsol_size)
+
 
 #separate the npv results from the solutions list
 #npv_results = [round(x[1][0], 0) for x in solutions]
@@ -609,6 +611,16 @@ for i, d in enumerate(df_portfolio_risk.values[0]):
     plt.text(i-0.2, d+0.01, str(round(d,2)))
 plt.grid(axis='y')
 plt.show()
+
+# Boxplot of the montecarlo results of the NPV of the portfolio obtained with limit 0.9 confidence
+# and compare it respect to the threshold results of the deterministic model
+plt.figure(5)
+plt.boxplot(mcs_results2[0][2], vert=False, labels=['NPV'])
+plt.title("Boxplot of the NPV of the portfolio obtained with limit 0.9 confidence")
+plt.show()
+
+# Boxplot of the montecarlo results of the NPV of the deterministic 
+
 
 #make sure no legend appears in the next plot
 #plt.figure(12)

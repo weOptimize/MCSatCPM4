@@ -20,7 +20,9 @@ portfolio_projection = []
 # create funtion to be called from another python file
 def threshold_calculation(df10r, bestsol_size):
     lo_iterations = 20
-    hi_iterations = 100
+    hi_iterations = 40
+    #lo_iterations = 20
+    #hi_iterations = 100
     # array to store all found solutions
       
 
@@ -235,6 +237,11 @@ def threshold_calculation(df10r, bestsol_size):
         if reduced_deterministic_portfolios_results_Hi_confidence[i][3][0] > 0.90:
             print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence[i])
             break
+    
+    # return the both the initial deterministic portfolio obtained and the 
+    # last extracted value as best possible deterministic result
+    return deterministic_portfolio, reduced_deterministic_portfolios_results_Hi_confidence[i]
+
 
     
 

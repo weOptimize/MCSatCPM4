@@ -328,3 +328,62 @@ def calc_det(arrayforsim, iterat):
             pass
 
     return(det_costs, det_NPV)
+
+def calc_det_withReserves(arrayforsim, iterat):
+    #initialize the arrays that will store the results of the MonteCarlo Simulation
+    det_costs = []
+    det_NPV = []
+    for i in range(len(arrayforsim)):        
+        #if the value i is 1, then the simulation is performed
+        if arrayforsim[i] == 1:
+            # open ten different ODS files and store the results in a list after computing the CPM and MCS 
+            # (restore to only last line if old version)
+            if i < 9:
+                filename = "RND_Schedules/data_wb0" + str(i+1) + ".ods"
+            else:
+                filename = "RND_Schedules/data_wb" + str(i+1) + ".ods"  
+            #print(filename)
+            mydata = read_ods(filename, 1)
+            # open ten different ODS files and store the results in a list after computing the CPM and MCS 
+            # (restore to only last line if old version)
+            if i < 9:
+                filename = "RND_Schedules/riskreg_0" + str(i+1) + ".ods"
+            else:
+                filename = "RND_Schedules/riskreg_" + str(i+1) + ".ods"
+            #print(filename)
+            myriskreg = read_ods(filename, 1) # was myriskreg = read_ods(filename, "Sheet1")
+
+            #compute MonteCarlo Simulation and store the results in an array called "sim1_costs"
+            sim_costs = MCS_CPM_RRdet_withReserves(mydata, myriskreg, iterat)
+            cashflows = []
+            # open the file that contains the expected cash flows, and extract the ones for the project i (located in row i)
+            with open('RND_Schedules/expected_cash_flows.txt') as f:
+                # read all the lines in the file as a list
+                lines = f.readlines()
+                # get the line at index i (assuming i is already defined)
+                line = lines[i]
+                # split the line by whitespace and convert each element to a float
+                cashflows = list(map(float, line.split()))
+
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV", also 
+            sim_NPV = MCS_NPVdet(cashflows, iterat)
+            # print(sim_NPV)
+            # substract sim_costs from all the values inside the array
+            for j in range(len(sim_NPV)):
+                sim_NPV[j] = sim_NPV[j] - sim_costs[j]
+            #print(sim_NPV)
+            
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
+            det_costs.append(sim_costs)
+            det_NPV.append(sim_NPV)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
+            #mcs_npvs1.append(sim1_NPV)
+            #compute the median of the NPV results
+        else:
+            # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
+            # mcs_NPV.append([0.0])   
+            # mcs_costs.append(np.zeros(iterat))
+            # do nothing and go to the next iteration
+            pass
+
+    return(det_costs, det_NPV)

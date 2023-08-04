@@ -190,7 +190,7 @@ def computeCPM(mydata):
 	SIMDAYS = []
 	for i in range(ntask):
 		#simduration.append(rnd.weibullvariate((mydata['ALPHA'][i]),(mydata['BETA'][i])))
-		SIMDAYS.append(round((mydata['MODE'][i]),2))
+		SIMDAYS.append(round((mydata['MODE'][i]),2)) #as deterministic, instead of taking triangular, just use MODE
 	#incorporate the column of simulated durations to the data frame:
 				
 	mydata['SIMDAYS'] = SIMDAYS
@@ -200,6 +200,21 @@ def computeCPM(mydata):
 	mydata = slack(mydata)
 	return mydata
 
+def computeCPM_ExpectedValues(mydata):
+	#create simdays column:
+	ntask = mydata.shape[0]
+	SIMDAYS = []
+	for i in range(ntask):
+		#simduration.append(rnd.weibullvariate((mydata['ALPHA'][i]),(mydata['BETA'][i])))
+		SIMDAYS.append(round(((mydata['MODE'][i])+(mydata['LOW'][i])+(mydata['HIGH'][i])/3),2)) #as deterministic, instead of taking triangular, just use MODE
+	#incorporate the column of simulated durations to the data frame:
+				
+	mydata['SIMDAYS'] = SIMDAYS
+	#print(SIMDAYS)
+	mydata = forwardPass(mydata)
+	mydata = backwardPass(mydata)
+	mydata = slack(mydata)
+	return mydata
 
 def computeRR(myriskreg):
 	# nrisk -> number of tasks
@@ -265,6 +280,40 @@ def MCS_NPVdet(cashflows, iterations):
 		#print(npvvalue)
 		projectnpv.append(npvvalue)
 	return projectnpv
+
+def MCS_CPM_RRdet_withReserves(mydata, myriskreg, iterations):
+	durationsplus = []
+	durations = []
+	callsperday= []
+	callarray= []
+	durat = 0
+	duratplus = 0
+	totaldays = 0
+	totalcalls = 0
+	projectcost = []
+
+	for i in range(iterations):
+		computeCPM_ExpectedValues(mydata)
+		durat = round(np.max(mydata['EF']),2)
+		totaldays = math.ceil(durat)
+		#callsperday = simulatearrivals(5, totaldays)
+		#sum all values at totalcalls
+		totalcalls = 5 * totaldays # was totalcalls = sum(callsperday)
+		# rng = np.random.default_rng()
+		# callarray = rng.uniform(0.02, 0.06, totalcalls)
+		totalextratime = totalcalls * 0.04
+		duratplus = round(durat + totalextratime)
+		durationsplus.append(duratplus)
+		durations.append(durat)
+		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
+		impact_RR = computeRR(myriskreg)
+		#total_impact_RR = impact_RR[0]
+		baseline_cost = impact_RR[1]
+		costoftime = duratplus * 5 + impact_RR + baseline_cost #there is no total_impact_RR
+		projectcost.append(costoftime)
+		
+	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
+	return projectcost
 
 
 #defining the function that calculates the net present value of a project

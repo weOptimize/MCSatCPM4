@@ -67,11 +67,11 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-#iterations = 500 #was 300 #was 500/20
-#iterations_finalMCS = 5000 #was 5k/100
+iterations = 500 #was 300 #was 500/20
+iterations_finalMCS = 1000 #was 5k/100
 
-iterations = 500 #was 30
-iterations_finalMCS = 5000 #was 50
+#iterations = 15 #was 30
+#iterations_finalMCS = 30 #was 50
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -174,11 +174,11 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 200 #was 100 #was 50 #was 180/30
+POPULATION_SIZE = 200 #was 100 #was 50 #was 180/30 #was 200
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 500 #was 500 #was 200 #was 100 #was 300 
-HALL_OF_FAME_SIZE = 5
+MAX_GENERATIONS = 500 #was 200 #was 100 #was 300  #was 500 
+HALL_OF_FAME_SIZE = 5 #was 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
 creator.create("FitnessMax", base.Fitness, weights=(100000.0, 1.0))
@@ -441,14 +441,14 @@ pf_cost20r = []
 
 #from the sorted dataframe, take the first row, which corresponds to the highest npv portfolio and extract the data needed for the following pictures
 finalsol_df = finalsol_df.iloc[0]
-portfolio_results = finalsol_df[0]
+best_stoch_pf = finalsol_df[0]
 npv_results_escalar = finalsol_df[1]
 npv_results.append(npv_results_escalar)
 #npv_results.append(finalsol_df[1])
 budgets_escalar = finalsol_df[2]
 budgets.append(budgets_escalar)
 #budgets.append(finalsol_df[2])
-print("portfolio_results: ", portfolio_results)
+print("portfolio_results: ", best_stoch_pf)
 print("npv_results: ", npv_results)
 print("budgets: ", budgets)
 
@@ -456,9 +456,9 @@ print("budgets: ", budgets)
 #*** Total execution time
 print("Total execution time: %s seconds" %((time.time() - start_time)))
 
-# execute the code inside Threshold_calculation vs03.py to check the thresholds for checking algorithm plausibility
-# Threshold_calculation_vs05.threshold_calculation(df10r, bestsol_size)
-Threshold_calculation_onlyDETERMINISTIC.threshold_calculation(df10r, bestsol_size)
+# execute the code inside Threshold_calculation vs05.py to check the thresholds for
+# checking algorithm plausibility and extract the two deterministic portfolios obtained
+threshold_sols = Threshold_calculation_onlyDETERMINISTIC.threshold_calculation(df10r, bestsol_size)
 
 #separate the npv results from the solutions list
 #npv_results = [round(x[1][0], 0) for x in solutions]
@@ -612,6 +612,68 @@ for i, d in enumerate(df_portfolio_risk.values[0]):
     plt.text(i-0.2, d+0.01, str(round(d,2)))
 plt.grid(axis='y')
 plt.show()
+
+
+# mcs_results2 is a three dimensional list of lists sized 2x20xlen(df20r). Extract the two two-dimensional matrices that corresponds
+# to the second list of the first dimension
+mcs_results2_npvs = mcs_results2[1] # NPVS do not discount project cost yet
+# transpose the list of lists
+mcs_results2_npvs = np.transpose(mcs_results2_npvs)
+
+# create a numpy array and is initialized with the value 0. The resulting matrix will have
+# the dimensions iterations_MCS*nrcandidates
+nparray_mcs_results2_NPVs = np.zeros((iterations_finalMCS, nrcandidates))
+
+# take the indexes from zipped_projection_indexes
+# and use them to fill the nparray_mcs_results2_NPVs with the NPVs of the chosen projects
+# do it by copying the values of the ith column of mcs_results2_npvs into the jth column
+# of nparray_mcs_results2_NPVs, being j the value of the ith element of zipped_projection_indexes
+j=0
+for i in range(nrcandidates):
+    if i in zipped_projection_indexes:
+        nparray_mcs_results2_NPVs [:,i] = mcs_results2_npvs [:,j]
+        j+=1
+    else:
+        pass
+
+# print nparray_mcs_results2_NPVs
+# convert nparray_mcs_results2_NPVs to a numpy array
+print ("nparray_mcs_results2_NPVs: ", nparray_mcs_results2_NPVs)
+# so that only the chosen optimal projects are considered for the next calculations
+# nparray_mcs_results2_NPVs = np.array(nparray_mcs_results2[1, :, :]) # NPVS do not discount project cost yet
+# multiply matrix by best_stoch_pf so that only the chosen projects are considered
+nparray_mcs_results2_NPVs_onlyChosen_pf = nparray_mcs_results2_NPVs * best_stoch_pf
+# convert df20r to a numpy array, and multiply it by the best portfolio found
+# so that only the chosen optimal projects are considered for the next calculations
+nparray_df20r = np.array(widened_df20r)
+# multiply matrix by best_stoch_pf so that only the chosen projects are considered
+nparray_df20r_onlyChosen_pf = nparray_df20r * best_stoch_pf
+
+# create new array sized the same as df20r to store the net NPV's
+netNPV = np.zeros(iterations_finalMCS)
+
+#initialize array to store the correlated costs of the portfolio
+correlated_pfCosts = np.zeros(iterations_finalMCS)
+
+# calculate the net NPV by substracting NPV minus all costs
+for i in range(iterations_finalMCS):
+    netNPV[i] = nparray_mcs_results2_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r_onlyChosen_pf[i,:].sum()
+    correlated_pfCosts [i] = nparray_df20r_onlyChosen_pf[i,:].sum()
+# Boxplot of the correlated montecarlo results of the NPV of the portfolio obtained with limit 0.9 confidence
+# and compare it respect to the threshold results of the deterministic model
+plt.figure(5)
+# plt.boxplot([pf_cost, pf_cost10r], labels=['Independent', 'Correlated'])
+plt.boxplot([netNPV, correlated_pfCosts], labels=['NPV', 'Portfolio Costs']) #add ,vert=False if you want it horizontal
+plt.title("Boxplot of the NPV & Cost of the optimal stochastic portfolio in stochastic conditions")
+plt.show()
+# print netnpv and correlated_pfCosts, including their labels, in the same line
+print('Net NPV: ', netNPV)
+print('Correlated Portfolio Costs: ', correlated_pfCosts)
+# show average value of netnpv
+print('Average Net NPV: ', netNPV.mean())
+# provide value of 95% confidence interval of correlated_pfCosts
+print('95% confidence interval of portfolio costs: ', np.percentile(correlated_pfCosts, [2.5, 97.5]))
+
 
 #make sure no legend appears in the next plot
 #plt.figure(12)
