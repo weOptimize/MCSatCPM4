@@ -672,7 +672,7 @@ print('Correlated Portfolio Costs: ', correlated_pfCosts)
 # show average value of netnpv
 print('Average Net NPV: ', netNPV.mean())
 # provide value of 95% confidence interval of correlated_pfCosts
-print('95% confidence interval of portfolio costs: ', np.percentile(correlated_pfCosts, [2.5, 97.5]))
+print('90% fulfilment confidence of portfolio costs: ', np.percentile(correlated_pfCosts, [0, 90]))
 
 
 #make sure no legend appears in the next plot

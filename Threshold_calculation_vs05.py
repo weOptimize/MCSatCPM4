@@ -20,8 +20,8 @@ portfolio_projection = []
 
 # create funtion to be called from another python file
 def threshold_calculation(df10r, bestsol_size):
-    lo_iterations = 20
-    hi_iterations = 40
+    lo_iterations = 24
+    hi_iterations = 80
     #lo_iterations = 20
     #hi_iterations = 100
     # array to store all found solutions
@@ -168,7 +168,8 @@ def threshold_calculation(df10r, bestsol_size):
                             (math.factorial(k) * math.factorial(len(zipped_projection_indexes) - k)))
         # add the new combinations to the existing list
         reduced_deterministic_indexes.extend(list(combinations(zipped_projection_indexes, k)))
-
+    # ****************DEBUG LINE - DELETE LATER!!!******************************************************
+    # n_combinations = 2
     # create a list to store the reduced deterministic portfolios sized as the number of subgroup combinations
     reduced_deterministic_portfolios = [0] * n_combinations
 
@@ -237,4 +238,5 @@ def threshold_calculation(df10r, bestsol_size):
     for i in range(len(reduced_deterministic_portfolios_results_Hi_confidence)):
         if reduced_deterministic_portfolios_results_Hi_confidence[i][3][0] > 0.90:
             print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence[i])
+            return reduced_deterministic_portfolios_results_Hi_confidence[i]
             break

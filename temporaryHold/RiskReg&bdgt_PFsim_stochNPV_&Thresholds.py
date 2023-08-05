@@ -19,7 +19,8 @@ from task_rnd_triang_with_interrupts_stdev_new_R2 import *
 from functions_for_simheuristic_v12 import *
 
 # import Threshold_calculation for plausibility check
-import old.Threshold_calculation_vs04 as Threshold_calculation_vs04
+import Threshold_calculation_vs05
+
 
 
 # create an empty list to store the timestamps and labels
@@ -418,7 +419,7 @@ print("budgets: ", budgets)
 print("Total execution time: %s seconds" %((time.time() - start_time)))
 
 # execute the code inside Threshold_calculation vs03.py to check the thresholds for checking algorithm plausibility
-Threshold_calculation_vs04.threshold_calculation(df10r)
+Threshold_calculation_vs05.threshold_calculation(df10r)
 
 #separate the npv results from the solutions list
 #npv_results = [round(x[1][0], 0) for x in solutions]
