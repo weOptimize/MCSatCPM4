@@ -169,7 +169,7 @@ def threshold_calculation(df10r, bestsol_size):
         # add the new combinations to the existing list
         reduced_deterministic_indexes.extend(list(combinations(zipped_projection_indexes, k)))
     # ****************DEBUG LINE - DELETE LATER!!!******************************************************
-    # n_combinations = 2
+    # n_combinations = 11
     # create a list to store the reduced deterministic portfolios sized as the number of subgroup combinations
     reduced_deterministic_portfolios = [0] * n_combinations
 
@@ -209,7 +209,7 @@ def threshold_calculation(df10r, bestsol_size):
     # and inform the total amount of results
 
 
-    print ("Total number of High Confidence (>65%) results: ", count_Hiconf)
+    print ("Total number of High Confidence (>75%) results: ", count_Hiconf)
     print("reduced_deterministic_portfolios_results: ")
     for i in range(5):
         print(reduced_deterministic_portfolios_results[i])
@@ -238,5 +238,5 @@ def threshold_calculation(df10r, bestsol_size):
     for i in range(len(reduced_deterministic_portfolios_results_Hi_confidence)):
         if reduced_deterministic_portfolios_results_Hi_confidence[i][3][0] > 0.90:
             print("reduced_deterministic_portfolios_results_Hi_confidence: ", reduced_deterministic_portfolios_results_Hi_confidence[i])
-            return reduced_deterministic_portfolios_results_Hi_confidence[i]
+            return reduced_deterministic_portfolios_results_Hi_confidence[i], deterministic_portfolio
             break
