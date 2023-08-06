@@ -172,12 +172,12 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-#POPULATION_SIZE = 18 #was 100 #was 50 #was 180/30
-POPULATION_SIZE = 40
+POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
+#POPULATION_SIZE = 40
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-#MAX_GENERATIONS = 40 #was 500 #was 200 #was 100 #was 300 
-MAX_GENERATIONS = 100
+MAX_GENERATIONS = 400 #was 500 #was 200 #was 100 #was 300 
+#MAX_GENERATIONS = 100
 HALL_OF_FAME_SIZE = 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
