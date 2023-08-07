@@ -307,9 +307,9 @@ def MCS_CPM_RRdet_withReserves(mydata, myriskreg, iterations):
 		durations.append(durat)
 		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
 		impact_RR = computeRR(myriskreg)
-		#total_impact_RR = impact_RR[0]
+		total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 5 + impact_RR + baseline_cost #there is no total_impact_RR
+		costoftime = duratplus * 5 + total_impact_RR + baseline_cost #there is no total_impact_RR
 		projectcost.append(costoftime)
 		
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
