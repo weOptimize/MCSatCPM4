@@ -41,6 +41,7 @@ timestamps.append(('t = 0', time.time()))
 #get budgetting confidence policy
 #budgetting_confidence_policies = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 budgetting_confidence_policies = [0.75]
+#budgetting_confidence_policies = [0.95]
 #array to store all budgeted durations linked to the budgetting confidence policy
 budgeteddurations = []
 stdevs = []
@@ -65,8 +66,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 500 #was 300 #was 500/20
-iterations_finalMCS = 5000 #was 5k/100
+iterations = 300 #was 300 #was 500
+iterations_finalMCS = 3000 #was 5k
 
 #iterations = 30
 #iterations_finalMCS = 50
@@ -111,20 +112,21 @@ plt.figure()
 # title: cost distributions of each candidate project in stochastic scenario
 plt.boxplot(mcs_results1[0], labels=range(1,nrcandidates+1))
 # set min and max for y-axis
-plt.ylim(0, 4000)
+plt.ylim(0, 5000)
 plt.title("Cost distributions of each candidate project in stochastic scenario")
 
-# create a list that results by substracting MCS_benefits - MCS_costs
+# create a list that results by substracting MCS_benefits (- MCS_costs)
 npv_results = [0] * len(mcs_results1[0])
 for i in range(len(mcs_results1[0])):
-    npv_results[i] = np.array(mcs_results1[1][i]) - np.array(mcs_results1[0][i])
+#    npv_results[i] = np.array(mcs_results1[1][i]) - np.array(mcs_results1[0][i])
+    npv_results[i] = np.array(mcs_results1[1][i])
 
 #create new plot
 plt.figure()
 # title: NPV distributions of each candidate project in stochastic scenario
 plt.boxplot(npv_results, labels=range(1,nrcandidates+1))
 # set min and max for y-axis
-plt.ylim(0, 4000)
+plt.ylim(0, 5000)
 plt.title("NPV distributions of each candidate project in stochastic scenario")
 plt.show()
 
@@ -167,7 +169,8 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
             # add the net present value of the project to the total net present value of the portfolio
             total_npv += npvperproject[i]
             #total_npv += npv[i][1]
-    if total_cost > maxbdgt or portfolio_confidence < min_pf_conf:
+    # if total_cost > maxbdgt or portfolio_confidence < min_pf_conf: 
+    if portfolio_confidence < min_pf_conf: #"total_cost > maxbdgt" removed to prevent affectation of point estimate
         return 0, 0
     return total_npv, portfolio_confidence
 
@@ -558,7 +561,7 @@ pf_cost = pf_df.sum(axis=1)
 
 fig, ax = plt.subplots()
 # title of the plot
-# ax.set_title('Monte Carlo Simulation of a candidate project')
+ax.set_title('Monte Carlo Simulation of a candidate project')
 # Plot the histogram of the monte carlo simulation of the first project
 ax.hist(mcs_results2[0][3], bins=200, color='grey', label='Histogram')
 # title of the x axis
@@ -731,9 +734,12 @@ correlated_pfCosts_LL = np.zeros(iterations_finalMCS)
 
 # calculate the net NPV by substracting NPV minus all costs
 for i in range(iterations_finalMCS):
-    netNPV[i] = nparray_mcs_results2_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r_onlyChosen_pf[i,:].sum()
-    netNPV_UL[i] = nparray_mcs_results3UL_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r3UL_onlyChosen_pf[i,:].sum()
-    netNPV_LL[i] = nparray_mcs_results3LL_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r3LL_onlyChosen_pf[i,:].sum()
+#    netNPV[i] = nparray_mcs_results2_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r_onlyChosen_pf[i,:].sum()
+#    netNPV_UL[i] = nparray_mcs_results3UL_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r3UL_onlyChosen_pf[i,:].sum()
+#    netNPV_LL[i] = nparray_mcs_results3LL_NPVs_onlyChosen_pf[i,:].sum()- nparray_df20r3LL_onlyChosen_pf[i,:].sum()
+    netNPV[i] = nparray_mcs_results2_NPVs_onlyChosen_pf[i,:].sum()
+    netNPV_UL[i] = nparray_mcs_results3UL_NPVs_onlyChosen_pf[i,:].sum()
+    netNPV_LL[i] = nparray_mcs_results3LL_NPVs_onlyChosen_pf[i,:].sum()
     correlated_pfCosts [i] = nparray_df20r_onlyChosen_pf[i,:].sum()
     correlated_pfCosts_UL [i] = nparray_df20r3UL_onlyChosen_pf[i,:].sum()
     correlated_pfCosts_LL [i] = nparray_df20r3LL_onlyChosen_pf[i,:].sum()
@@ -746,10 +752,10 @@ plt.boxplot([netNPV, correlated_pfCosts, netNPV_UL, correlated_pfCosts_UL, netNP
 plt.title("Optimal stochastic portf. in stochastic conditions vs deterministic portf. in deterministic conditions (UL) vs deterministic portf. in stochastic conditions")
 plt.show()
 # print netnpv and correlated_pfCosts, including their labels, in the same line
-print('Net NPV: ', netNPV)
-print('Correlated Portfolio Costs: ', correlated_pfCosts)
+#print('Net NPV: ', netNPV)
+#print('Correlated Portfolio Costs: ', correlated_pfCosts)
 # show average value of netnpv
-print('Average Net NPV: ', netNPV.mean())
+print('Average PV: ', netNPV.mean())
 # provide value of 95% confidence interval of correlated_pfCosts
 print('90% fulfilment confidence of portfolio costs (Stoch/Stoch): ', np.percentile(correlated_pfCosts, [0, 90]))
 print('90% fulfilment confidence of portfolio costs (Det/Det): ', np.percentile(correlated_pfCosts_UL, [0, 90]))

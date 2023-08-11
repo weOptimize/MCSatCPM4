@@ -169,7 +169,7 @@ def threshold_calculation(df10r, bestsol_size):
         # add the new combinations to the existing list
         reduced_deterministic_indexes.extend(list(combinations(zipped_projection_indexes, k)))
     # ****************DEBUG LINE - DELETE LATER!!!******************************************************
-    # n_combinations = 11
+    n_combinations = 11
     # create a list to store the reduced deterministic portfolios sized as the number of subgroup combinations
     reduced_deterministic_portfolios = [0] * n_combinations
 

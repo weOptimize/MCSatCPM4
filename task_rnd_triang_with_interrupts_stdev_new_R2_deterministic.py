@@ -190,7 +190,8 @@ def computeCPM(mydata):
 	SIMDAYS = []
 	for i in range(ntask):
 		#simduration.append(rnd.weibullvariate((mydata['ALPHA'][i]),(mydata['BETA'][i])))
-		SIMDAYS.append(round((mydata['MODE'][i]),2)) #as deterministic, instead of taking triangular, just use MODE
+#		SIMDAYS.append(round((mydata['MODE'][i]),2)) #as deterministic, instead of taking triangular, just use MODE
+		SIMDAYS.append(round((((mydata['MODE'][i])+(mydata['LOW'][i])+(mydata['HIGH'][i]))/3),2)) #as deterministic, instead of taking triangular, just use avg of the three points
 	#incorporate the column of simulated durations to the data frame:
 				
 	mydata['SIMDAYS'] = SIMDAYS
@@ -206,7 +207,7 @@ def computeCPM_ExpectedValues(mydata):
 	SIMDAYS = []
 	for i in range(ntask):
 		#simduration.append(rnd.weibullvariate((mydata['ALPHA'][i]),(mydata['BETA'][i])))
-		SIMDAYS.append(round(((mydata['MODE'][i])+(mydata['LOW'][i])+(mydata['HIGH'][i])/3),2)) #as deterministic, instead of taking triangular, just use MODE
+		SIMDAYS.append(round((((mydata['MODE'][i])+(mydata['LOW'][i])+(mydata['HIGH'][i]))/3),2)) #as deterministic, instead of taking triangular, just use avg of the three points
 	#incorporate the column of simulated durations to the data frame:
 				
 	mydata['SIMDAYS'] = SIMDAYS
@@ -216,13 +217,15 @@ def computeCPM_ExpectedValues(mydata):
 	mydata = slack(mydata)
 	return mydata
 
-def computeRR(myriskreg):
+def computeRRdet(myriskreg):
 	# nrisk -> number of tasks
 	nrisk = myriskreg.shape[0]
 	#initialize pxi array with size of nrisk
 	pxi = np.zeros(nrisk, dtype = np.float64)
 	for i in range(nrisk):
-		pxi[i] = round((myriskreg['Probability'][i] * myriskreg['ML_impact'][i]),2)
+		pxi[i] = round(myriskreg['Probability'][i] * (myriskreg['Opt_impact'][i]+
+						 myriskreg['ML_impact'][i]+myriskreg['Pess_impact'][i])/3,2)
+	#	pxi[i] = round(myriskreg['Probability'][i] * myriskreg['ML_impact'][i],2)
 	#sum all values at pxi	
 	total_impact_RR = sum(pxi)
 	#extract baseline cost from risk register file
@@ -256,11 +259,11 @@ def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 		durationsplus.append(duratplus)
 		durations.append(durat)
 		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
-		impact_RR = computeRR(myriskreg)
+		impact_RR = computeRRdet(myriskreg)
 		#total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 5 + 0 + baseline_cost #there is no total_impact_RR
-		projectcost.append(costoftime)
+		simcost = duratplus * 5 + 0 + baseline_cost #there is no total_impact_RR
+		projectcost.append(simcost)
 		
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
@@ -306,11 +309,11 @@ def MCS_CPM_RRdet_withReserves(mydata, myriskreg, iterations):
 		durationsplus.append(duratplus)
 		durations.append(durat)
 		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
-		impact_RR = computeRR(myriskreg)
+		impact_RR = computeRRdet(myriskreg)
 		total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 5 + total_impact_RR + baseline_cost #there is no total_impact_RR
-		projectcost.append(costoftime)
+		simcost = duratplus * 5 + total_impact_RR + baseline_cost #there is no total_impact_RR
+		projectcost.append(simcost)
 		
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost

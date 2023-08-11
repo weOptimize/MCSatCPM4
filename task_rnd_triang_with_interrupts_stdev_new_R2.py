@@ -238,8 +238,8 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 		impact_RR = computeRR(myriskreg)
 		total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]
-		costoftime = duratplus * 5 + total_impact_RR + baseline_cost #was 3
-		projectcost.append(costoftime)
+		simcost = duratplus * 5 + total_impact_RR + baseline_cost #was 3
+		projectcost.append(simcost)
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
 

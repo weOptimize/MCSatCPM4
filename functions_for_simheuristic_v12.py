@@ -92,7 +92,7 @@ def simulate(arrayforsim, iterat):
             #print(filename)
             myriskreg = read_ods(filename, 1) # was myriskreg = read_ods(filename, "Sheet1")
 
-            #compute MonteCarlo Simulation and store the results in an array called "sim1_costs"
+            #compute MonteCarlo Simulation and store the results in an array called "sim_costs"
             sim_costs = MCS_CPM_RR(mydata, myriskreg, iterat)
             cashflows = []
             # open the file that contains the expected cash flows, and extract the ones for the project i (located in row i)
@@ -142,7 +142,8 @@ def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies, numberofpr
             survival_value = survival_value_extractor(mcs_costs[i], budgetting_confidence_policy, len(mcs_costs[i]))
             #store the first survival value in an array where the columns correspond to the budgetting confidence policies and the rows correspond to the projects
             bdgtperproject_matrix[i][j]=survival_value
-            npvperproject_matrix[i][j]=median_npv-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value and we must convert into thousand euros)
+            # npvperproject_matrix[i][j]=median_npv-survival_value #(was npvperproject_matrix[i][j]=median_npv-survival_value)
+            npvperproject_matrix[i][j]=median_npv  #revert if wanting to get NPV instead of PV
     # print ("bdgtperproject_matrix", bdgtperproject_matrix)
     # print ("npvperproject_matrix", npvperproject_matrix)
     return(bdgtperproject_matrix, npvperproject_matrix)
@@ -311,7 +312,8 @@ def calc_det(arrayforsim, iterat):
             # print(sim_NPV)
             # substract sim_costs from all the values inside the array
             for j in range(len(sim_NPV)):
-                sim_NPV[j] = sim_NPV[j] - sim_costs[j]
+                sim_NPV[j] = sim_NPV[j] #activate below if looking for npv instead of pv
+                #sim_NPV[j] = sim_NPV[j] - sim_costs[j]
             #print(sim_NPV)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
@@ -370,7 +372,8 @@ def calc_det_withReserves(arrayforsim, iterat):
             # print(sim_NPV)
             # substract sim_costs from all the values inside the array
             for j in range(len(sim_NPV)):
-                sim_NPV[j] = sim_NPV[j] - sim_costs[j]
+                sim_NPV[j] = sim_NPV[j] #activate below if looking for npv instead of pv
+                #sim_NPV[j] = sim_NPV[j] - sim_costs[j]
             #print(sim_NPV)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration

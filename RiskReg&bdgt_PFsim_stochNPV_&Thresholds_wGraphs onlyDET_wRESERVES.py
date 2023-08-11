@@ -43,6 +43,7 @@ timestamps.append(('t = 0', time.time()))
 #get budgetting confidence policy
 #budgetting_confidence_policies = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
 budgetting_confidence_policies = [0.75]
+#budgetting_confidence_policies = [0.95]
 #array to store all budgeted durations linked to the budgetting confidence policy
 budgeteddurations = []
 stdevs = []
@@ -71,9 +72,9 @@ nrcandidates = 20
 #iterations_finalMCS = 1000 #was 5k/100
 
 iterations = 15 #was 30
-iterations_finalMCS = 30 #was 50
+iterations_finalMCS = 50 #was 50
 
-iterations_postpro = 1000
+iterations_postpro = 1000 #was 1000
 
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
@@ -110,28 +111,30 @@ npvperproject_matrix = x_perproj_matrix1[1]
 # sum the costs of all projects to get the total cost of the portfolio if choosing all projects
 totalcost = np.sum(x_perproj_matrix1[0])
 
+
+# *********************** REACTIVATE FOR INDIVIDUAL BOXPLOTS ***********************
 # perform a boxplot of the costs obtained in the montecarlo simulation (mcs_results1[0]),
 # one boxplot per project (as many projects as nrcandidates) with the corresponding label
-plt.figure()
+# plt.figure()
 # title: cost distributions of each candidate project in stochastic scenario
-plt.boxplot(mcs_results1[0], labels=range(1,nrcandidates+1))
+# plt.boxplot(mcs_results1[0], labels=range(1,nrcandidates+1))
 # set min and max for y-axis
-plt.ylim(0, 4000)
-plt.title("Cost distributions of each candidate project in stochastic scenario")
+# plt.ylim(0, 4000)
+# plt.title("Cost distributions of each candidate project in stochastic scenario")
 
 # create a list that results by substracting MCS_benefits - MCS_costs
-npv_results = [0] * len(mcs_results1[0])
-for i in range(len(mcs_results1[0])):
-    npv_results[i] = np.array(mcs_results1[1][i]) - np.array(mcs_results1[0][i])
+# npv_results = [0] * len(mcs_results1[0])
+# for i in range(len(mcs_results1[0])):
+#     npv_results[i] = np.array(mcs_results1[1][i]) - np.array(mcs_results1[0][i])
 
 #create new plot
-plt.figure()
+# plt.figure()
 # title: NPV distributions of each candidate project in stochastic scenario
-plt.boxplot(npv_results, labels=range(1,nrcandidates+1))
+# plt.boxplot(npv_results, labels=range(1,nrcandidates+1))
 # set min and max for y-axis
-plt.ylim(0, 4000)
-plt.title("NPV distributions of each candidate project in stochastic scenario")
-plt.show()
+# plt.ylim(0, 4000)
+# plt.title("NPV distributions of each candidate project in stochastic scenario")
+# plt.show()
 
 
 # print("total portfolio cost allocation request (without correlations because it is a request):")
@@ -172,15 +175,16 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
             # add the net present value of the project to the total net present value of the portfolio
             total_npv += npvperproject[i]
             #total_npv += npv[i][1]
-    if total_cost > maxbdgt or portfolio_confidence < min_pf_conf:
+    # if total_cost > maxbdgt or portfolio_confidence < min_pf_conf: 
+    if portfolio_confidence < min_pf_conf: #"total_cost > maxbdgt" removed to prevent affectation of point estimate
         return 0, 0
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 20 #was 100 #was 50 #was 180/30 #was 200
+POPULATION_SIZE = 18 #was 100 #was 50 #was 180/30 #was 200
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 50 #was 200 #was 100 #was 300  #was 500 
+MAX_GENERATIONS = 30 #was 200 #was 100 #was 300  #was 500 
 HALL_OF_FAME_SIZE = 5 #was 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function
@@ -542,17 +546,19 @@ nparray_df20r_4 = nparray_df20r4 * deterministic_portfolio_with_reserv
 nparray_df20r_5 = nparray_df20r5 * deterministic_portfolio_2kshift
 
 # create new array sized the same as df20r to store the net NPV's
-netNPV_4 = np.zeros(iterations_finalMCS)
-netNPV_5 = np.zeros(iterations_finalMCS)
+netNPV_4 = np.zeros(iterations_postpro)
+netNPV_5 = np.zeros(iterations_postpro)
 
 #initialize array to store the correlated costs of the portfolio
-pfCosts_4 = np.zeros(iterations_finalMCS)
-pfCosts_5 = np.zeros(iterations_finalMCS)
+pfCosts_4 = np.zeros(iterations_postpro)
+pfCosts_5 = np.zeros(iterations_postpro)
 
 # calculate the net NPV by substracting NPV minus all costs
-for i in range(iterations_finalMCS):
-    netNPV_4[i] = nparray_mcs_results_4_NPVs[i,:].sum()- nparray_df20r_4[i,:].sum()
-    netNPV_5[i] = nparray_mcs_results_5_NPVs[i,:].sum()- nparray_df20r_5[i,:].sum()
+for i in range(iterations_postpro):
+#    netNPV_4[i] = nparray_mcs_results_4_NPVs[i,:].sum()- nparray_df20r_4[i,:].sum()
+#    netNPV_5[i] = nparray_mcs_results_5_NPVs[i,:].sum()- nparray_df20r_5[i,:].sum()
+    netNPV_4[i] = nparray_mcs_results_4_NPVs[i,:].sum()
+    netNPV_5[i] = nparray_mcs_results_5_NPVs[i,:].sum()
     pfCosts_4 [i] = nparray_df20r_4[i,:].sum()
     pfCosts_5 [i] = nparray_df20r_5[i,:].sum()
 # Boxplot of the correlated montecarlo results of the NPV of the portfolio obtained with limit 0.9 confidence
@@ -563,14 +569,45 @@ plt.boxplot([netNPV_4, pfCosts_4, netNPV_5, pfCosts_5], labels=
             ['NPV_Deterministic_CR', 'Portfolio Costs CR', 'NPV_Deterministic -2.5k€', 'Portf.Costs -2.5k€']) #add ,vert=False if you want it horizontal
 plt.title("Deterministic portf. counting EV of contingency reserves vs. lowering Bdgt Limit -2.5k€")
 #set y axis limits between 8000 and 20000
-plt.ylim(7700,20000)
+plt.ylim(7700,27000)
 #show the plot
 plt.show()
 # print netnpv and correlated_pfCosts, including their labels, in the same line
 # print('Net NPV: ', netNPV)
 # print('Correlated Portfolio Costs: ', correlated_pfCosts)
 # show average value of netnpv
-# print('Average Net NPV: ', netNPV.mean())
-# provide value of 95% confidence interval of correlated_pfCosts
+print('Average PV: ', netNPV_4.mean())
+# provide value of 90% confidence interval of correlated_pfCosts
 print('90% fulfilment confidence of portfolio costs (Det/Conting.Reserves): ', np.percentile(pfCosts_4, [0, 90]))
 print('90% fulfilment confidence of portfolio costs (Det/ -2.5 kEur): ', np.percentile(pfCosts_5, [0, 90]))
+# estimate the confidence value that corresponds to pfCosts = 10800
+sorted_arr = np.sort(pfCosts_4)
+index = np.searchsorted(sorted_arr, 10800)
+percentile_rank = index / len(sorted_arr)
+print('percentile to which 10800 corresponds: ', percentile_rank)
+
+fig, ax = plt.subplots()
+# title of the plot
+ax.set_title('Monte Carlo Simulation of a candidate project')
+# Plot the histogram of the monte carlo simulation of the fourth project
+ax.hist(mcs_results2[0][3], bins=200, color='grey', label='Histogram')
+# title of the x axis
+ax.set_xlabel('Cost in k€')
+# Create a twin Axes object that shares the x-axis of the original Axes object
+ax2 = ax.twinx()
+# Plot the histogram of the monte carlo simulation of the first project in the form of a cumulative distribution function
+ax2.hist(mcs_results2[0][3], bins=200, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
+# Set the y-axis of the twin Axes object to be visible
+ax2.yaxis.set_visible(True)
+#set maximum value of the y axis of the twin Axes object to 1
+ax2.set_ylim(0, 1)
+# add grid to the plot following the y axis of the twin Axes object
+ax2.grid(axis='y')
+# add grid to the plot following the x axis of the original Axes object
+ax.grid(axis='x')
+# Add legend
+ax.legend(loc='center left')
+ax2.legend(loc='upper left')
+plt.show()
+#print(mcs_results2[0][3])
+#print(len(mcs_results2[0][3]))
