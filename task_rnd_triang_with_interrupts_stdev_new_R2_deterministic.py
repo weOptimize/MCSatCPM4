@@ -268,7 +268,7 @@ def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
 
-def MCS_NPVdet(cashflows, iterations):
+def MCS_PVdet(cashflows, iterations):
 	projectnpv = []
 	for i in range(iterations):
 		wacc = 0.1

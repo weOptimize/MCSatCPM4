@@ -243,7 +243,7 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 	#print(durationsplus) #ACTIVAR PARA VER EL RETORNO DE LA FUNCION
 	return projectcost
 
-def MCS_NPV(cashflows, iterations):
+def MCS_PV(cashflows, iterations):
 	projectnpv = []
 	for i in range(iterations):
 		wacc = np.random.normal(0.1,0.01) # was 0.06 stdev

@@ -22,7 +22,7 @@ from task_rnd_triang_with_interrupts_stdev_new_R2_deterministic import *
 initcandidates = 20
 nr_confidence_policies = 1
 mcs_costs = []
-mcs_NPV = []
+mcs_PV = []
 maxbdgt = 3800
 #initialize matrices to store bdgt and npv
 bdgtperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
@@ -71,7 +71,7 @@ def expected_value_extractor(sim_npv, iterations):
 def simulate(arrayforsim, iterat):
     #initialize the arrays that will store the results of the MonteCarlo Simulation
     mcs_costs = []
-    mcs_NPV = []
+    mcs_PV = []
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
@@ -104,21 +104,21 @@ def simulate(arrayforsim, iterat):
                 # split the line by whitespace and convert each element to a float
                 cashflows = list(map(float, line.split()))
 
-            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV"
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_PV"
             #print(cashflows)
-            sim_NPV = MCS_NPV(cashflows, iterat)
-            #print(sim_NPV)
+            sim_PV = MCS_PV(cashflows, iterat)
+            #print(sim_PV)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
             mcs_costs.append(sim_costs)
-            mcs_NPV.append(sim_NPV)
-            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
-            #mcs_npvs1.append(sim1_NPV)
-            #compute the median of the NPV results
-            median_npv = expected_value_extractor(sim_NPV, iterat)
+            mcs_PV.append(sim_PV)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the PV at each iteration
+            #mcs_npvs1.append(sim1_PV)
+            #compute the median of the PV results
+            median_npv = expected_value_extractor(sim_PV, iterat)
         else:
             # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
-            # mcs_NPV.append([0.0])   
+            # mcs_PV.append([0.0])   
             # mcs_costs.append(np.zeros(iterat))
             # do nothing and go to the next iteration
             pass
@@ -126,16 +126,16 @@ def simulate(arrayforsim, iterat):
             
 
     # print ("mcs_costs", mcs_costs)
-    # print ("mcs_NPV", mcs_NPV)
-    return(mcs_costs, mcs_NPV)
+    # print ("mcs_PV", mcs_PV)
+    return(mcs_costs, mcs_PV)
 
-# compute the median of the NPV results
-def pointestimate(mcs_costs, mcs_NPV, budgetting_confidence_policies, numberofprojects):
+# compute the median of the PV results
+def pointestimate(mcs_costs, mcs_PV, budgetting_confidence_policies, numberofprojects):
     #initialize the arrays that will store the point estimates with size nr of projects x nr of budgetting confidence policies
     bdgtperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
     npvperproject_matrix = np.zeros((numberofprojects, len(budgetting_confidence_policies)))
     for i in range(numberofprojects):
-        median_npv = round(expected_value_extractor(mcs_NPV[i], len(mcs_NPV[i])),0)
+        median_npv = round(expected_value_extractor(mcs_PV[i], len(mcs_PV[i])),0)
         for j in range(len(budgetting_confidence_policies)):
             budgetting_confidence_policy = budgetting_confidence_policies[j]
             #extract the survival value from the array sim_duration that corresponds to the budgetting confidence policy
@@ -225,6 +225,10 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     # print('cm10r AFTER:')
     # print(cm10r)
 
+# ***************** ONLY ACTIVE WHEN TESTING NO-CORRELATION VERSION *****************
+    # set the correlation matrix to the identity matrix (no correlation)
+    # cm10r = np.identity(initcandidates)
+
     if cm10r.shape[0] == initcandidates:
         #make sure no legend appears in the next plot
         plt.figure(12)
@@ -271,10 +275,18 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     correlation_matrix1 = df10r.corr()  
     return df10r  
 
+def NONcorrelatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):  
+    # pass non-correlated MCS results to dataframe  
+    df0 = pd.DataFrame(data=mcs_results[0]).T  
+    col_names = ["P{:02d}".format(i+1) for i in range(nrcandidates)]  
+    df0.rename(columns=dict(enumerate(col_names)), inplace=True)  
+    correlation_matrix0 = df0.corr()
+    return df0
+
 def calc_det(arrayforsim, iterat):
     #initialize the arrays that will store the results of the MonteCarlo Simulation
     det_costs = []
-    det_NPV = []
+    det_PV = []
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
@@ -307,34 +319,34 @@ def calc_det(arrayforsim, iterat):
                 # split the line by whitespace and convert each element to a float
                 cashflows = list(map(float, line.split()))
 
-            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV", also 
-            sim_NPV = MCS_NPVdet(cashflows, iterat)
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_PV", also 
+            sim_PV = MCS_PVdet(cashflows, iterat)
             # print(sim_NPV)
             # substract sim_costs from all the values inside the array
-            for j in range(len(sim_NPV)):
-                sim_NPV[j] = sim_NPV[j] #activate below if looking for npv instead of pv
-                #sim_NPV[j] = sim_NPV[j] - sim_costs[j]
-            #print(sim_NPV)
+            for j in range(len(sim_PV)):
+                sim_PV[j] = sim_PV[j] #activate below if looking for npv instead of pv
+                #sim_PV[j] = sim_PV[j] - sim_costs[j]
+            #print(sim_PV)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
             det_costs.append(sim_costs)
-            det_NPV.append(sim_NPV)
-            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
-            #mcs_npvs1.append(sim1_NPV)
-            #compute the median of the NPV results
+            det_PV.append(sim_PV)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the PV at each iteration
+            #mcs_npvs1.append(sim1_PV)
+            #compute the median of the PV results
         else:
             # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
-            # mcs_NPV.append([0.0])   
+            # mcs_PV.append([0.0])   
             # mcs_costs.append(np.zeros(iterat))
             # do nothing and go to the next iteration
             pass
 
-    return(det_costs, det_NPV)
+    return(det_costs, det_PV)
 
 def calc_det_withReserves(arrayforsim, iterat):
     #initialize the arrays that will store the results of the MonteCarlo Simulation
     det_costs = []
-    det_NPV = []
+    det_PV = []
     for i in range(len(arrayforsim)):        
         #if the value i is 1, then the simulation is performed
         if arrayforsim[i] == 1:
@@ -367,31 +379,31 @@ def calc_det_withReserves(arrayforsim, iterat):
                 # split the line by whitespace and convert each element to a float
                 cashflows = list(map(float, line.split()))
 
-            # compute MonteCarlo Simulation and store the results in an array called "sim1_NPV", also 
-            sim_NPV = MCS_NPVdet(cashflows, iterat)
-            # print(sim_NPV)
+            # compute MonteCarlo Simulation and store the results in an array called "sim1_PV", also 
+            sim_PV = MCS_PVdet(cashflows, iterat)
+            # print(sim_PV)
             # substract sim_costs from all the values inside the array
-            for j in range(len(sim_NPV)):
-                sim_NPV[j] = sim_NPV[j] #activate below if looking for npv instead of pv
+            for j in range(len(sim_PV)):
+                sim_PV[j] = sim_PV[j] #activate below if looking for npv instead of pv
                 #sim_NPV[j] = sim_NPV[j] - sim_costs[j]
             #print(sim_NPV)
             
             #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the cost at each iteration
             det_costs.append(sim_costs)
-            det_NPV.append(sim_NPV)
-            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the NPV at each iteration
-            #mcs_npvs1.append(sim1_NPV)
-            #compute the median of the NPV results
+            det_PV.append(sim_PV)
+            #store each of the results from the MCS in an array where the columns correspond to the projects and the rows correspond to the PV at each iteration
+            #mcs_npvs1.append(sim1_PV)
+            #compute the median of the PV results
         else:
             # if the value i is 0, then the simulation is not performed and "nothing is done" (was "the appended results an array full of zeros")
-            # mcs_NPV.append([0.0])   
+            # mcs_PV.append([0.0])   
             # mcs_costs.append(np.zeros(iterat))
             # do nothing and go to the next iteration
             pass
 
-    return(det_costs, det_NPV)
+    return(det_costs, det_PV)
 
-def simulatescenario(df10r, portfolio_projection, projectselection, iter):
+def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
     iterations = iter
     maxbdgt = 10800
     budgetting_confidence_policies = [0.75]
@@ -406,7 +418,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     # store the positions of the chosen projects in the portfolio_projection array, starting with 0 (as i+1 for if if starting with 1)
     zipped_projection_indexes = [i for i, x in enumerate(portfolio_projection) if x == 1]
 
-    # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
+    # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (PV)
     x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
     # print ("x_perproj_matrix2: ", x_perproj_matrix2)
 
@@ -503,9 +515,9 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
         pf_conf2[i] = 1-count/iterations
 
     # create a dataframe with the results
-    finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
+    finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio PV': npv_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
     # order the dataframe by the portfolio npv, starting with the highest npv
-    finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
+    finalsol_df = finalsol_df.sort_values(by=['Portfolio PV'], ascending=False)
     # print ("Final Solution: ", finalsol_df)
 
     npv_results = []
@@ -533,7 +545,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     # from the projects at the selected portfolio, extract the costs and benefits of each project
     # and store them in a matrix, together with the project indexes
 
-def simulatescenario3(df10r, portfolio_projection, projectselection, iter):
+def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     iterations = iter
     maxbdgt = 10800
     budgetting_confidence_policies = [0.75]
@@ -548,7 +560,7 @@ def simulatescenario3(df10r, portfolio_projection, projectselection, iter):
     # store the positions of the chosen projects in the portfolio_projection array, starting with 0 (as i+1 for if if starting with 1)
     zipped_projection_indexes = [i for i, x in enumerate(portfolio_projection) if x == 1]
 
-    # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (NPV)
+    # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (PV)
     x_perproj_matrix2 = pointestimate(mcs_results3[0], mcs_results3[1], budgetting_confidence_policies, projected_candidates)
     # print ("x_perproj_matrix2: ", x_perproj_matrix2)
 
@@ -645,9 +657,9 @@ def simulatescenario3(df10r, portfolio_projection, projectselection, iter):
         pf_conf2[i] = 1-count/iterations
 
     # create a dataframe with the results
-    finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio NPV': npv_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
+    finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio PV': npv_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
     # order the dataframe by the portfolio npv, starting with the highest npv
-    finalsol_df = finalsol_df.sort_values(by=['Portfolio NPV'], ascending=False)
+    finalsol_df = finalsol_df.sort_values(by=['Portfolio PV'], ascending=False)
     # print ("Final Solution: ", finalsol_df)
 
     npv_results = []
