@@ -68,8 +68,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-#iterations = 500 #was 300 #was 500/20
-#iterations_finalMCS = 1000 #was 5k/100
+#iterations = 50 #was 300 #was 500/20
+#iterations_finalMCS = 100 #was 5k/100
 
 iterations = 15 #was 30
 iterations_finalMCS = 50 #was 50

@@ -135,7 +135,7 @@ plt.title("PV distributions of each candidate project in stochastic scenario")
 # print("total portfolio cost allocation request (without correlations because it is a request):")
 # print(totalcost)
 
-df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes)
+# df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes)
 # print("df10r: ", df10r)
 
 # write the second timestamp (substract the current time minus the previously stored timestamp) and label to the list
@@ -176,11 +176,11 @@ def evaluate(individual, bdgtperproject, PVperproject, maxbdgt):
     return total_PV, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
+POPULATION_SIZE = 18 #was 100 #was 50 #was 180/30
 #POPULATION_SIZE = 40
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 400 #was 500 #was 200 #was 100 #was 300 
+MAX_GENERATIONS = 40 #was 500 #was 200 #was 100 #was 300 
 #MAX_GENERATIONS = 100
 HALL_OF_FAME_SIZE = 5
 
@@ -254,6 +254,8 @@ def maximize_PV():
     #print(hall_of_fame[2], hall_of_fame[2].fitness.values[0], hall_of_fame[2].fitness.values[1], portfolio_totalbudget(hall_of_fame[2], bdgtperproject_matrix))
     #return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
     return hall_of_fame
+
+df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes) #from138
 
 # this function calculates the PV of each project and then uses the maximizer function to obtain and return portfolio, PV and bdgt in a matrix (solutions)
 for i in range(len(budgetting_confidence_policies)):
