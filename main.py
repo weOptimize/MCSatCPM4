@@ -66,8 +66,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 50 #was 300 #was 500
-iterations_finalMCS = 500 #was 5k
+iterations = 300 #was 300 #was 500
+iterations_finalMCS = 3000 #was 5k
 iterations_postpro = 100
 
 #iterations = 30
@@ -176,11 +176,11 @@ def evaluate(individual, bdgtperproject, PVperproject, maxbdgt):
     return total_PV, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 18 #was 100 #was 50 #was 180/30
+POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
 #POPULATION_SIZE = 40
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 40 #was 500 #was 200 #was 100 #was 300 
+MAX_GENERATIONS = 400 #was 500 #was 200 #was 100 #was 300 
 #MAX_GENERATIONS = 100
 HALL_OF_FAME_SIZE = 5
 
@@ -312,120 +312,8 @@ print ("Indexes of selected projects: ", zipped_projection_indexes)
 print ("Number of candidate projects for stage 2: ", projected_candidates)
 
 print ("************ STARTING STAGE 2 (long MCS) **********")
-#second simulation to get all cdfs for cost & benefits after optimization step (may_update: was 1000)
-mcs_results2 = simulate(portfolio_projection,iterations_finalMCS) # we pass portfolio_projection to simulate only the selected projects
-# we obtain a matrix sized (iterations_finalMCS, 2) where mcs_results2[0] corresponds to the project costs
-# and mcs_results2[1] to the project benefits (PV) each of them with "iterations_finalMCS" rows
 
-# mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (PV_SINdescontarCOSTE)
-x_perproj_matrix2 = pointestimate(mcs_results2[0], mcs_results2[1], budgetting_confidence_policies, projected_candidates)
-# print ("x_perproj_matrix2: ", x_perproj_matrix2)
-
-# write the fourth timestamp and label to the list
-timestamps.append(('Second MCS, also including point estimate of budgets and PV for shortlisted projects', time.time()))
-
-# we assume correlations at the cost side, not at the benefits side (conservative approach)
-# update x_perproj_matrix2 with the correlation effect registered inside df20r
-# print("x_perproj_matrix2: ", x_perproj_matrix2)
-# separate the budget and PV results from the x_perproj_matrix
-bdgtperproject_matrix = x_perproj_matrix2[0]
-PVperproject_matrix = x_perproj_matrix2[1]
-# print(type(bdgtperproject_matrix))
-# print(type(PVperproject_matrix))
-bdgtperproject_matrix = np.squeeze(bdgtperproject_matrix)
-PVperproject_matrix = np.squeeze(PVperproject_matrix)
-
-# remove all data that has zeroes from bdgtperproject_matrix and PVperproject_matrix
-# bdgtperproject_matrix = bdgtperproject_matrix[np.nonzero(bdgtperproject_matrix.flatten())]
-# PVperproject_matrix = PVperproject_matrix[np.nonzero(PVperproject_matrix.flatten())]
-
-# print("bdgtperproject_matrix: ", bdgtperproject_matrix)
-# print("PVperproject_matrix: ", PVperproject_matrix)
-print("size of bdgtperproject_matrix", len(bdgtperproject_matrix))
-print("size of PVperproject_matrix", len(PVperproject_matrix))
-print("size of mcs_results2", len(mcs_results2))
-
-# print("mcs_results2 (input para correlacionar): ", mcs_results2)
-
-# for each of the options obtained in projectselection, calculate the total portfolio PV and the portfolio budget based on the information
-# from x_perproj_matrix
-PV_results = [0] * len(projectselection) # as many as len(projectselection) because we have one PV per item in HoF
-budgets = [0] * len(projectselection)
-pf_conf2 = [0] * len(projectselection)
-widened_bdgtperproject_matrix = [0] * nrcandidates # as many as initial amount of project candidates
-widened_PVperproject_matrix = [0] * nrcandidates
-# initialize dataframe called widened_df20r as a copy of df10r
-widened_df20r = df10r.copy()
-# enlarge the dataframe to the size of iterations_finalMCS
-widened_df20r = widened_df20r.reindex(range(iterations_finalMCS))
-# fill the dataframe with zeroes
-widened_df20r.iloc[:, :] = 0
-
-df20r = correlatedMCS(mcs_results2, iterations_finalMCS, projected_candidates, zipped_projection_indexes)
-#we obtain a matrix sized (iterations_finalMCS, 2) where df20r[0] corresponds to the project costs
-# and df20r[1] to the project benefits (PV) each of them with "iterations_finalMCS" rows
-
-
-# pick in order the values from bdgtperproject_matrix and PVperproject_matrix and store them in widened_bdgtperproject_matrix
-# and widened_PVperproject_matrix
-# The location of the values to be picked is available in zipped_projection_indexes
-j=0
-for i in range(nrcandidates):
-    if i in zipped_projection_indexes:
-        widened_bdgtperproject_matrix [i] = round(bdgtperproject_matrix [j],3)
-        widened_PVperproject_matrix [i] = round(PVperproject_matrix [j],3)
-        j+=1
-    else:
-        pass
-# print("widened_bdgtperproject_matrix: ", widened_bdgtperproject_matrix)
-# print("widened_PVperproject_matrix: ", widened_PVperproject_matrix)
-
-
-# pick in order the values from df20r and store them in widened_df20r (to be used in the next step)
-i=0
-j=0
-k=0
-for i in range(nrcandidates):
-    if i in zipped_projection_indexes:
-        for j in range(iterations_finalMCS):
-            widened_df20r.loc[j, widened_df20r.columns[i]] = df20r.loc[j, df20r.columns[k]]
-        k += 1
-    else:
-        pass
-
-print("widened_df20r: ", widened_df20r)
-
-for i in range(len(projectselection)):
-    #calculate the total portfolio budget by multiplying the budget of each project by the binary array obtained in projectselection    
-    print(projectselection[i])
-    budgets[i] = np.sum(np.multiply(widened_bdgtperproject_matrix,projectselection[i]))
-    #calculate the total portfolio PV by multiplying the PV of each project by the binary array obtained in projectselection
-    PV_results[i] = np.sum(np.multiply(widened_PVperproject_matrix,projectselection[i]))
-    #multiply dataframe 20r by the chosen portfolio to reflect the effect of the projects that are chosen
-    pf_df20r = widened_df20r * projectselection[i]
-    #sum the rows of the new dataframe to calculate the total cost of the portfolio
-    pf_cost20r = pf_df20r.sum(axis=1)
-    #extract the maximum of the resulting costs
-    maxcost20r = max(pf_cost20r)
-    print("max cost:")
-    print(maxcost20r)
-    #count how many results were higher than maxbdgt
-    count = 0
-    for j in range(pf_cost20r.__len__()):
-        if pf_cost20r[j] > maxbdgt:
-            count = count + 1
-    #array storing the portfolio risk not to exceed 3.800 Mio.€, as per-one risk units
-    pf_conf2[i] = 1-count/iterations_finalMCS
-
-# create a dataframe with the results
-finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio PV': PV_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
-# order the dataframe by the portfolio PV, starting with the highest PV
-finalsol_df = finalsol_df.sort_values(by=['Portfolio PV'], ascending=False)
-#sum the amount of projects that have been chosen (binary value = 1)
-finalsol_df['Portfolio size'] = finalsol_df['Portfolio'].apply(lambda x: sum(x))
-print ("Final Solution: ", finalsol_df)
-#extract the amount of projects chosen in the best portfolio
-bestsol_size = finalsol_df.iloc[0,4] # deleted "+1" to check same amount of projects like optimal
+best_stoch_pf, mcs_results2, widened_df20r = simulatescenario0(df10r, portfolio_projection, projectselection, iterations_finalMCS)
 
 # write the fifth timestamp and label to the list. Calculation FINALIZED
 timestamps.append(('Application of correlation effect to final options', time.time()))
@@ -446,31 +334,13 @@ crono_frame.loc['Total'] = ['Total', crono_frame['Execution time (s)'].sum()]
 # print the dataframe
 print(crono_frame)
 
-PV_results = []
-budgets = []
-pf_cost20r = []
-#pf_conf2 = []
-
-#from the sorted dataframe, take the first row, which corresponds to the highest PV portfolio and extract the data needed for the following pictures
-finalsol_df = finalsol_df.iloc[0]
-best_stoch_pf = finalsol_df[0]
-PV_results_escalar = finalsol_df[1]
-PV_results.append(PV_results_escalar)
-#PV_results.append(finalsol_df[1])
-budgets_escalar = finalsol_df[2]
-budgets.append(budgets_escalar)
-#budgets.append(finalsol_df[2])
-print("portfolio_results: ", best_stoch_pf)
-print("PV_results: ", PV_results)
-print("budgets: ", budgets)
-
-
 #*** Total execution time
 print("Total execution time: %s seconds" %((time.time() - start_time)))
 
 # execute the code inside Threshold_calculation vs05.py to check the thresholds for
 # checking algorithm plausibility and extract the two deterministic portfolios obtained
-deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold_calculation_other_DETERMINISTICs.deterministic_with_reserves(df10r, bestsol_size)
+#deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold_calculation_other_DETERMINISTICs.deterministic_with_reserves(df10r, bestsol_size)
+deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold_calculation_other_DETERMINISTICs.deterministic_with_reserves(df10r)
 
 
 # I want to reuse code that analyzes a HoF, but now I want it to analyze only one solution, 
@@ -478,12 +348,11 @@ deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold
 projectselection = []
 projectselection.append(deterministic_portfolio_with_reserv)# simulate the portfolio to obtain the MCS of PV and portfolio costs and then graph the results
 
-projectselection = []
-projectselection.append(deterministic_portfolio_2kshift)# simulate the portfolio to obtain the MCS of PV and portfolio costs and then graph the results
-
-
 # simulatescenario(df10r, portfolio_projection, projectselection, iter):
 mcs_results4, widened_df20r4 = simulatescenario(df10r, deterministic_portfolio_with_reserv, projectselection, iterations_postpro)
+
+projectselection = []
+projectselection.append(deterministic_portfolio_2kshift)# simulate the portfolio to obtain the MCS of PV and portfolio costs and then graph the results
 
 # simulatescenario(df10r, portfolio_projection, projectselection, iter):
 mcs_results5, widened_df20r5 = simulatescenario(df10r, deterministic_portfolio_2kshift, projectselection, iterations_postpro)

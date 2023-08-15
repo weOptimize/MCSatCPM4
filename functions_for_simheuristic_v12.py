@@ -518,7 +518,7 @@ def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
     finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio PV': PV_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
     # order the dataframe by the portfolio PV, starting with the highest PV
     finalsol_df = finalsol_df.sort_values(by=['Portfolio PV'], ascending=False)
-    # print ("Final Solution: ", finalsol_df)
+    print ("Final Solution: ", finalsol_df)
 
     PV_results = []
     budgets = []
@@ -527,7 +527,7 @@ def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
 
     #from the sorted dataframe, take the first row, which corresponds to the highest PV portfolio and extract the data needed for the following pictures
     finalsol_df = finalsol_df.iloc[0]
-    portfolio_results = finalsol_df[0]
+    best_stoch_pf = finalsol_df[0]
     PV_results_escalar = finalsol_df[1]
     PV_results.append(PV_results_escalar)
     #npv_results.append(finalsol_df[1])
@@ -535,12 +535,13 @@ def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
     budgets.append(budgets_escalar)
     #budgets.append(finalsol_df[2])
     # print ("Indexes of selected projects at deterministic portfolio: ", zipped_projection_indexes)
-    # print("portfolio_results: ", portfolio_results)
-    # print("npv_results: ", npv_results)
-    # print("budgets: ", budgets)
+    print("portfolio_results: ", best_stoch_pf)
+    print("PV_results: ", PV_results)
+    print("budgets: ", budgets)
     
     
-    return(zipped_projection_indexes, budgets, PV_results, pf_conf2)
+    # return(zipped_projection_indexes, budgets, PV_results, pf_conf2)
+    return(best_stoch_pf, mcs_results2, widened_df20r)
 
     # from the projects at the selected portfolio, extract the costs and benefits of each project
     # and store them in a matrix, together with the project indexes
@@ -552,7 +553,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
 
 
     #second simulation to get all cdfs for cost & benefits after optimization step
-    mcs_results3 = simulate(portfolio_projection,iterations)
+    mcs_results = simulate(portfolio_projection,iterations)
 
     # calculate the amount of projects in "portfolio_projection"
     projected_candidates = sum(portfolio_projection)
@@ -561,7 +562,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     zipped_projection_indexes = [i for i, x in enumerate(portfolio_projection) if x == 1]
 
     # mcs_results2[0] corresponds to the project costs and mcs_results2[1] to the project benefits (PV)
-    x_perproj_matrix2 = pointestimate(mcs_results3[0], mcs_results3[1], budgetting_confidence_policies, projected_candidates)
+    x_perproj_matrix2 = pointestimate(mcs_results[0], mcs_results[1], budgetting_confidence_policies, projected_candidates)
     # print ("x_perproj_matrix2: ", x_perproj_matrix2)
 
     # we assume correlations at the cost side, not at the benefits side (conservative approach)
@@ -600,7 +601,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     # fill the dataframe with zeroes
     widened_df20r.iloc[:, :] = 0
 
-    df20r = correlatedMCS(mcs_results3, iterations, projected_candidates, zipped_projection_indexes)
+    df20r = correlatedMCS(mcs_results, iterations, projected_candidates, zipped_projection_indexes)
     # print("df20r: ", df20r)
 
     # pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix and widened_npvperproject_matrix
@@ -669,7 +670,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
 
     #from the sorted dataframe, take the first row, which corresponds to the highest PV portfolio and extract the data needed for the following pictures
     finalsol_df = finalsol_df.iloc[0]
-    portfolio_results = finalsol_df[0]
+    best_stoch_pf = finalsol_df[0]
     PV_results_escalar = finalsol_df[1]
     PV_results.append(PV_results_escalar)
     #npv_results.append(finalsol_df[1])
@@ -682,7 +683,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     # print("budgets: ", budgets)
     
     
-    return(mcs_results3, widened_df20r)
+    return(mcs_results, widened_df20r)
 
     # from the projects at the selected portfolio, extract the costs and benefits of each project
     # and store them in a matrix, together with the project indexes

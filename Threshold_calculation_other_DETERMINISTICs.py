@@ -20,7 +20,7 @@ portfolio_projection = []
 iterations_finalMCS = 5000 #only because of performing MCS here
 
 # create funtion to be called from another python file
-def deterministic_with_reserves(df10r, bestsol_size):
+def deterministic_with_reserves(df10r):
     lo_iterations = 20
     hi_iterations = 100
     # array to store all found solutions
