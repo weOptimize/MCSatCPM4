@@ -228,13 +228,13 @@ def MCS_CPM_RR(mydata, myriskreg, iterations):
 	for i in range(iterations):
 		computeCPM(mydata)
 		durat = round(np.max(mydata['EF']),2)
-		totaldays = math.ceil(durat)
-		callsperday = simulatearrivals(5, totaldays)
+		#totaldays = math.ceil(durat) # this model does not consider operational interruptions
+		#callsperday = simulatearrivals(5, totaldays) # this model does not consider operational interruptions
 		#sum all values at totalcalls
-		totalcalls = sum(callsperday)
-		callarray = rng.uniform(0.02, 0.06, totalcalls)
-		duratplus = round(durat + sum(callarray),2)
-		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
+		#totalcalls = sum(callsperday) # this model does not consider operational interruptions
+		#rng = np.random.default_rng() # this model does not consider operational interruptions
+		#callarray = rng.uniform(0.02, 0.06, totalcalls)
+		duratplus = round(durat + 0) #sum(callarray),2) # this model does not consider operational interruptions		#execute function to compute risk register impact and store the value in variable "total_impact_RR"
 		impact_RR = computeRR(myriskreg)
 		total_impact_RR = impact_RR[0]
 		baseline_cost = impact_RR[1]

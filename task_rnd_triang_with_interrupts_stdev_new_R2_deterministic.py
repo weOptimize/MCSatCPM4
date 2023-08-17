@@ -248,13 +248,13 @@ def MCS_CPM_RRdet(mydata, myriskreg, iterations):
 	for i in range(iterations):
 		computeCPM(mydata)
 		durat = round(np.max(mydata['EF']),2)
-		totaldays = math.ceil(durat)
+		#totaldays = math.ceil(durat) # this model does not consider operational interruptions
 		#callsperday = simulatearrivals(5, totaldays)
 		#sum all values at totalcalls
-		totalcalls = 5 * totaldays # was totalcalls = sum(callsperday)
+		#totalcalls = 5 * totaldays # was totalcalls = sum(callsperday) # this model does not consider operational interruptions
 		# rng = np.random.default_rng()
 		# callarray = rng.uniform(0.02, 0.06, totalcalls)
-		totalextratime = totalcalls * 0.04
+		totalextratime = 0 #totalcalls * 0.04  # this model does not consider operational interruptions
 		duratplus = round(durat + totalextratime)
 		durationsplus.append(duratplus)
 		durations.append(durat)
@@ -298,13 +298,13 @@ def MCS_CPM_RRdet_withReserves(mydata, myriskreg, iterations):
 	for i in range(iterations):
 		computeCPM_ExpectedValues(mydata)
 		durat = round(np.max(mydata['EF']),2)
-		totaldays = math.ceil(durat)
+		#totaldays = math.ceil(durat) # this model does not consider operational interruptions
 		#callsperday = simulatearrivals(5, totaldays)
 		#sum all values at totalcalls
-		totalcalls = 5 * totaldays # was totalcalls = sum(callsperday)
+		#totalcalls = 5 * totaldays # was totalcalls = sum(callsperday)
 		# rng = np.random.default_rng()
 		# callarray = rng.uniform(0.02, 0.06, totalcalls)
-		totalextratime = totalcalls * 0.04
+		totalextratime = totalcalls *0 # * 0.04 # this model does not consider operational interruptions
 		duratplus = round(durat + totalextratime)
 		durationsplus.append(duratplus)
 		durations.append(durat)

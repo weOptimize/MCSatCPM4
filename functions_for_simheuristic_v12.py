@@ -403,7 +403,7 @@ def calc_det_withReserves(arrayforsim, iterat):
 
     return(det_costs, det_PV)
 
-def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
+def simulatescenario0(df10r, portfolio_projection, projectselection, iter, correlated):
     iterations = iter
     maxbdgt = 10800
     budgetting_confidence_policies = [0.75]
@@ -458,7 +458,10 @@ def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
     # fill the dataframe with zeroes
     widened_df20r.iloc[:, :] = 0
 
-    df20r = correlatedMCS(mcs_results2, iterations, projected_candidates, zipped_projection_indexes)
+    if correlated == "NC":
+        df20r = NONcorrelatedMCS(mcs_results2, iterations, projected_candidates, zipped_projection_indexes)
+    else:
+        df20r = correlatedMCS(mcs_results2, iterations, projected_candidates, zipped_projection_indexes)
     # print("df20r: ", df20r)
 
     # pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix and widened_npvperproject_matrix
@@ -546,7 +549,7 @@ def simulatescenario0(df10r, portfolio_projection, projectselection, iter):
     # from the projects at the selected portfolio, extract the costs and benefits of each project
     # and store them in a matrix, together with the project indexes
 
-def simulatescenario(df10r, portfolio_projection, projectselection, iter):
+def simulatescenario(df10r, portfolio_projection, projectselection, iter, correlated):
     iterations = iter
     maxbdgt = 10800
     budgetting_confidence_policies = [0.75]
@@ -601,7 +604,10 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter):
     # fill the dataframe with zeroes
     widened_df20r.iloc[:, :] = 0
 
-    df20r = correlatedMCS(mcs_results, iterations, projected_candidates, zipped_projection_indexes)
+    if correlated == "NC":
+        df20r = NONcorrelatedMCS(mcs_results, iterations, projected_candidates, zipped_projection_indexes)
+    else:
+        df20r = correlatedMCS(mcs_results, iterations, projected_candidates, zipped_projection_indexes)
     # print("df20r: ", df20r)
 
     # pick in order the values from bdgtperproject_matrix and npvperproject_matrix and store them in widened_bdgtperproject_matrix and widened_npvperproject_matrix

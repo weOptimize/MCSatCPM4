@@ -47,6 +47,7 @@ budgeteddurations = []
 stdevs = []
 #array to store all found solutions
 solutions = []
+solutionsNC = []
 #arrays to store all results of the monte carlo simulation
 mcs_results = []
 mcs_results1 = []
@@ -67,7 +68,7 @@ correlation_matrix = []
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
 iterations = 300 #was 300 #was 500
-iterations_finalMCS = 3000 #was 5k
+iterations_finalMCS = 1000 #was 5k
 iterations_postpro = 100
 
 #iterations = 30
@@ -138,15 +139,16 @@ plt.title("PV distributions of each candidate project in stochastic scenario")
 # df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes)
 # print("df10r: ", df10r)
 
-# write the second timestamp (substract the current time minus the previously stored timestamp) and label to the list
-timestamps.append(('First MCS with correlated cost and PV for each project', time.time()))
-
 # Defining the fitness function
 def evaluate(individual, bdgtperproject, PVperproject, maxbdgt):
     total_cost = 0
     total_PV = 0
     #multiply dataframe 10r by the chosen portfolio to reflect the effect of the projects that are chosen
-    pf_df10r = df10r * individual
+    # execute only if df10r is defined
+    if 'df10r' in globals():
+        pf_df10r = df10r * individual
+    else:
+        pf_df10r = df10r_NC * individual
     #sum the rows of the new dataframe to calculate the total cost of the portfolio
     pf_cost10r = pf_df10r.sum(axis=1)
     #extract the maximum of the resulting costs
@@ -180,7 +182,7 @@ POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
 #POPULATION_SIZE = 40
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 400 #was 500 #was 200 #was 100 #was 300 
+MAX_GENERATIONS = 300 #was 500 #was 200 #was 100 #was 300 
 #MAX_GENERATIONS = 100
 HALL_OF_FAME_SIZE = 5
 
@@ -255,6 +257,75 @@ def maximize_PV():
     #return hall_of_fame[0], hall_of_fame[0].fitness.values[0][0], portfolio_totalbudget(hall_of_fame[0], bdgtperproject_matrix)
     return hall_of_fame
 
+# ******* Optimize and refine (2nd stage) the NON correlated version *******
+
+df10r_NC = NONcorrelatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes) #from138
+
+# this function calculates the PV of each project and then uses the maximizer function to obtain and return portfolio, PV and bdgt in a matrix (solutions)
+for i in range(len(budgetting_confidence_policies)):
+    # I take the column of bdgtperproject_matrix that corresponds to the budgetting confidence policy
+    bdgtperproject=bdgtperproject_matrix[:,i]
+    # print(bdgtperproject)
+    PVperproject=PVperproject_matrix[:,i]
+    # print(PVperproject)
+    # execute the maximizer function to obtain the portfolio, and its PV and bdgt
+    projectselectionNC = maximize_PV()
+    # assign the result from projectselection to the variable solutions
+    solutionsNC.append(projectselectionNC)
+    #print(solutions)
+# lately I only had one BCP, si it has performed the append only once, however as the solution is a hall of fame, it has appended a list of 3 individuals
+
+#store the PV results, portfolio results, portfolio confidence levels and budgets taken in different lists
+PV_results_NC = [0] * len(projectselectionNC)
+portfolio_results_NC = [0] * len(projectselectionNC)
+portfolio_confidence_levels_NC = [0] * len(projectselectionNC)
+pf_conf2_NC = [0] * len(projectselectionNC)
+budgets_NC = [0] * len(projectselectionNC)
+for i in range(nrcandidates):
+    PV_results_NC = [[x[i].fitness.values[0][0] for x in solutionsNC] for i in range(len(projectselectionNC))]
+    #portfolio_results = [[x[i] for x in solutionsNC] for i in range(len(projectselectionNC))]
+    portfolio_confidence_levels_NC = [[x[i].fitness.values[1] for x in solutionsNC] for i in range(len(projectselectionNC))]
+    budgets_NC = [[portfolio_totalbudget(x[i], bdgtperproject_matrix)[0] for x in solutionsNC] for i in range(len(projectselectionNC))]
+
+# take all arrays inside portfolio_results and sum all of them
+portfolio_projectionNC = [sum(x) for x in zip(*projectselectionNC)]
+
+# convert portfolio_projection array into a binary array, where 1 means that the project is selected and 0 means that it is not
+portfolio_projectionNC = [1 if x > 0 else 0 for x in portfolio_projectionNC]
+
+# calculate the amount of projects in "portfolio_projection"
+projected_candidates_NC = sum(portfolio_projectionNC)
+
+# store the positions of the chosen projects in the portfolio_projection array, starting with 0 (as i+1 for if if starting with 1)
+zipped_projection_indexes_NC = [i for i, x in enumerate(portfolio_projectionNC) if x == 1]
+
+# convert portfolio_projection in a full ones array
+# portfolio_projection = [1] * len(portfolio_projection)
+
+
+print ("******** NO CORRELATION SCENARIO *******")
+print ("************ SUMMARY STAGE 1 **********")
+# print ("PV_results (NC): ", PV_results)
+print ("portfolio_results: ", projectselectionNC)
+print ("portfolio_confidence_levels: ", portfolio_confidence_levels_NC)
+print ("budgets: ", budgets_NC)
+print ("portfolio_projection: ", portfolio_projectionNC)
+print ("Indexes of selected projects: ", zipped_projection_indexes_NC)
+print ("Number of candidate projects for stage 2: ", projected_candidates_NC)
+
+# write the third timestamp (substract the current time minus the previously stored timestamp) and label to the list
+timestamps.append(('Optimization step (GA algorithm) - NC', time.time()))
+
+print ("************ STARTING STAGE 2 (long MCS) **********")
+
+correlated = "NC"
+best_stoch_pf_NC, mcs_results2, widened_df20r2 = simulatescenario0(df10r_NC, portfolio_projectionNC, projectselectionNC, iterations_finalMCS, correlated)
+
+# write the fifth timestamp and label to the list. Calculation FINALIZED
+timestamps.append(('Postprocessing non-correlated (NC) version', time.time()))
+
+# *********** Optimize and refine (2nd stage) the correlated version ************
+
 df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes) #from138
 
 # this function calculates the PV of each project and then uses the maximizer function to obtain and return portfolio, PV and bdgt in a matrix (solutions)
@@ -299,9 +370,9 @@ zipped_projection_indexes = [i for i, x in enumerate(portfolio_projection) if x 
 # portfolio_projection = [1] * len(portfolio_projection)
 
 # write the third timestamp (substract the current time minus the previously stored timestamp) and label to the list
-timestamps.append(('Optimization step (GA algorithm)', time.time()))
+timestamps.append(('Optimization step (GA algorithm - YC)', time.time()))
 
-
+print ("******* SCENARIO with CORRELATION ******")
 print ("************ SUMMARY STAGE 1 **********")
 print ("PV_results: ", PV_results)
 print ("portfolio_results: ", projectselection)
@@ -313,7 +384,8 @@ print ("Number of candidate projects for stage 2: ", projected_candidates)
 
 print ("************ STARTING STAGE 2 (long MCS) **********")
 
-best_stoch_pf, mcs_results2, widened_df20r = simulatescenario0(df10r, portfolio_projection, projectselection, iterations_finalMCS)
+correlated = "YC"
+best_stoch_pf_YC, mcs_results3, widened_df20r3 = simulatescenario0(df10r, portfolio_projection, projectselection, iterations_finalMCS, correlated)
 
 # write the fifth timestamp and label to the list. Calculation FINALIZED
 timestamps.append(('Application of correlation effect to final options', time.time()))
@@ -323,7 +395,7 @@ segments = [0] * (len(timestamps)-1)
 # calculate the difference between each pair of timestamps
 for i in range(0, len(timestamps)-1):
     segments[i] = (timestamps[i+1][0], round(timestamps[i+1][1] - timestamps[i][1], 2))
-    print(segments)
+    # print(segments)
     
 # create a dataframe from the list of timestamps
 crono_frame = pd.DataFrame(segments, columns=['Checkpoint', 'Execution time (s)'])
@@ -348,14 +420,15 @@ deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold
 projectselection = []
 projectselection.append(deterministic_portfolio_with_reserv)# simulate the portfolio to obtain the MCS of PV and portfolio costs and then graph the results
 
+correlated = "NC"
 # simulatescenario(df10r, portfolio_projection, projectselection, iter):
-mcs_results4, widened_df20r4 = simulatescenario(df10r, deterministic_portfolio_with_reserv, projectselection, iterations_postpro)
+mcs_results4, widened_df20r4 = simulatescenario(df10r_NC, deterministic_portfolio_with_reserv, projectselection, iterations_postpro, correlated)
 
 projectselection = []
 projectselection.append(deterministic_portfolio_2kshift)# simulate the portfolio to obtain the MCS of PV and portfolio costs and then graph the results
 
 # simulatescenario(df10r, portfolio_projection, projectselection, iter):
-mcs_results5, widened_df20r5 = simulatescenario(df10r, deterministic_portfolio_2kshift, projectselection, iterations_postpro)
+mcs_results5, widened_df20r5 = simulatescenario(df10r_NC, deterministic_portfolio_2kshift, projectselection, iterations_postpro, correlated)
 
 # store the positions of the chosen projects in the portfolio_projection array, starting with 0 (as i+1 for if if starting with 1)
 zipped_indexes_4 = [i for i, x in enumerate(deterministic_portfolio_with_reserv) if x == 1]
@@ -368,17 +441,20 @@ zipped_indexes_5 = [i for i, x in enumerate(deterministic_portfolio_2kshift) if 
 # mcs_results2 is a three dimensional list of lists sized 2x20xlen(df20r). Extract the two two-dimensional matrices that corresponds
 # to the second list of the first dimension
 # mcs results 3 has the missing MCS results from
-mcs_results2_PVs = mcs_results2[1] 
+mcs_results2_PVs = mcs_results2[1]
+mcs_results3_PVs = mcs_results3[1] 
 mcs_results4_PVs = mcs_results4[1] # PVS do not discount project cost yet
 mcs_results5_PVs = mcs_results5[1] 
 # transpose the list of lists
 mcs_results2_PVs = np.transpose(mcs_results2_PVs)
+mcs_results3_PVs = np.transpose(mcs_results3_PVs)
 mcs_results4_PVs = np.transpose(mcs_results4_PVs)
 mcs_results5_PVs = np.transpose(mcs_results5_PVs)
 
 # create a numpy array and is initialized with the value 0. The resulting matrix will have
 # the dimensions iterations_MCS*nrcandidates
 nparray_mcs_results2_PVs = np.zeros((iterations_finalMCS, nrcandidates))
+nparray_mcs_results3_PVs = np.zeros((iterations_finalMCS, nrcandidates))
 nparray_mcs_results4_PVs = np.zeros((iterations_postpro, nrcandidates))
 nparray_mcs_results5_PVs = np.zeros((iterations_postpro, nrcandidates))
 
@@ -388,8 +464,16 @@ nparray_mcs_results5_PVs = np.zeros((iterations_postpro, nrcandidates))
 # of nparray_mcs_results2_PVs, being j the value of the ith element of zipped_projection_indexes
 j=0
 for i in range(iterations_finalMCS):
-    if i in zipped_projection_indexes:
+    if i in zipped_projection_indexes_NC:
         nparray_mcs_results2_PVs [:,i] = mcs_results2_PVs [:,j]
+        j+=1
+    else:
+        pass
+
+j=0
+for i in range(iterations_finalMCS):
+    if i in zipped_projection_indexes:
+        nparray_mcs_results3_PVs [:,i] = mcs_results3_PVs [:,j]
         j+=1
     else:
         pass
@@ -420,36 +504,44 @@ for i in range(nrcandidates):
 # so that only the chosen optimal projects are considered for the next calculations
 # nparray_mcs_results2_PVs = np.array(nparray_mcs_results2[1, :, :]) # PVS do not discount project cost yet
 # multiply matrix by best_stoch_pf so that only the chosen projects are considered
-nparray_mcs_results2_PVs_onlyChosen_pf = nparray_mcs_results2_PVs * best_stoch_pf
+nparray_mcs_results2_PVs_onlyChosen_pf = nparray_mcs_results2_PVs * best_stoch_pf_NC
+nparray_mcs_results3_PVs_onlyChosen_pf = nparray_mcs_results3_PVs * best_stoch_pf_YC
 nparray_mcs_results_4_PVs = nparray_mcs_results4_PVs * deterministic_portfolio_with_reserv
 nparray_mcs_results_5_PVs = nparray_mcs_results5_PVs * deterministic_portfolio_2kshift
 
 # convert df20r to a numpy array, and multiply it by the best portfolio found
 # so that only the chosen optimal projects are considered for the next calculations
-nparray_df20r = np.array(widened_df20r)
+nparray_df20r2 = np.array(widened_df20r2)
+nparray_df20r3 = np.array(widened_df20r3)
 nparray_df20r4 = np.array(widened_df20r4)
 nparray_df20r5 = np.array(widened_df20r5)
 # multiply matrix by best_stoch_pf so that only the chosen projects are considered
-nparray_df20r_onlyChosen_pf = nparray_df20r * best_stoch_pf
+nparray_df20r_Chosen_pf_NC = nparray_df20r2 * best_stoch_pf_NC
+nparray_df20r_3 = nparray_df20r3 * best_stoch_pf_YC
 nparray_df20r_4 = nparray_df20r4 * deterministic_portfolio_with_reserv
 nparray_df20r_5 = nparray_df20r5 * deterministic_portfolio_2kshift
 
 # create new array sized the same as df20r to store the net PV's
-netPV = np.zeros(iterations_finalMCS)
+netPV_2 = np.zeros(iterations_finalMCS)
+netPV_3 = np.zeros(iterations_finalMCS)
 netPV_4 = np.zeros(iterations_postpro)
 netPV_5 = np.zeros(iterations_postpro)
 
 #initialize array to store the correlated costs of the portfolio
+NC_pfCosts = np.zeros(iterations_finalMCS)
 correlated_pfCosts = np.zeros(iterations_finalMCS)
 pfCosts_4 = np.zeros(iterations_postpro)
 pfCosts_5 = np.zeros(iterations_postpro)
 
-# calculate the net PV by substracting PV minus all costs
+# calculate the net PV 
 for i in range(iterations_finalMCS):
-    netPV[i] = nparray_mcs_results2_PVs_onlyChosen_pf[i,:].sum()
-    correlated_pfCosts [i] = nparray_df20r_onlyChosen_pf[i,:].sum()
+    netPV_2[i] = nparray_mcs_results2_PVs_onlyChosen_pf[i,:].sum()
+    netPV_3[i] = nparray_mcs_results3_PVs_onlyChosen_pf[i,:].sum()
+    NC_pfCosts [i] = nparray_df20r_Chosen_pf_NC[i,:].sum()
+    correlated_pfCosts [i] = nparray_df20r_3[i,:].sum()
 
-# calculate the net PV by substracting PV minus all costs
+
+# calculate the net PV 
 for i in range(iterations_postpro):
 #    netPV_4[i] = nparray_mcs_results_4_PVs[i,:].sum()- nparray_df20r_4[i,:].sum()
 #    netPV_5[i] = nparray_mcs_results_5_PVs[i,:].sum()- nparray_df20r_5[i,:].sum()
@@ -460,15 +552,44 @@ for i in range(iterations_postpro):
 
 # Boxplot of the correlated montecarlo results of the PV of the portfolio obtained with limit 0.9 confidence
 # and compare it respect to the threshold results of the deterministic model
+# plt.boxplot([pf_cost, pf_cost10r], labels=['Independent', 'Correlated'])
+# plt.boxplot([netPV_2, netPV_3, NC_pfCosts, correlated_pfCosts], labels=
+#             ['PV(NC)', 'PV(YC)', 'PfCost(NC)', 'PfCost(YC)']) #add ,vert=False if you want it horizontal
+# plt.title("Comparison between NON correlated candidate projects (NC) and correlated candidate projects (YC)")
+# Assuming that netPV_2, netPV_3, NC_pfCosts, correlated_pfCosts are your data.
+labels = ['PV(NC)', 'PV(YC)', 'PfCost(NC)', 'PfCost(YC)']
+data = [netPV_2, netPV_3, NC_pfCosts, correlated_pfCosts]
+
+#plt.figure(4)
+#fig, ax = plt.subplots()
+fig = plt.figure(4)
+ax = fig.subplots()
+
+# Create the boxplot
+bp = ax.boxplot(data, labels=labels, patch_artist=True, notch=True, vert=1)
+
+for i in range(len(bp['medians'])):
+    median = bp['medians'][i]
+    x, y = median.get_data()
+    # You can choose your own way to calculate the median value from the y data points.
+    median_val = np.median(y)
+    # This line places a label (the median value) at the x location of the median line segment,
+    # and at the y location of the median value
+    ax.text(x[0] + 0.55, median_val - 0.00 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
+
+plt.title("Comparison between NON correlated candidate projects (NC) and correlated candidate projects (YC)")
+
 plt.figure(5)
 # plt.boxplot([pf_cost, pf_cost10r], labels=['Independent', 'Correlated'])
-plt.boxplot([netPV, netPV_4, netPV_5], labels=
-            ['PV', 'PV_Deterministic_CR', 'PV_Deterministic -2.5k€', ]) #add ,vert=False if you want it horizontal
-plt.title("PV of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.5k€")
+plt.boxplot([netPV_2, netPV_4, netPV_5], labels=
+            ['PV', 'PV_Det-Stoch', 'PV_Deterministic -2.5k€', ]) #add ,vert=False if you want it horizontal
+plt.title("NC PV of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.5k€")
+
 plt.figure(6)
-plt.boxplot([correlated_pfCosts, pfCosts_4, pfCosts_5], labels=
+plt.boxplot([NC_pfCosts, pfCosts_4, pfCosts_5], labels=
             ['Portfolio Costs', 'Portfolio Costs CR', 'Portf.Costs -2.5k€']) #add ,vert=False if you want it horizontal
-plt.title("COSTS of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.5k€")
+plt.title("NC COSTS of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.5k€")
+
 #set y axis limits between 8000 and 20000
 #plt.ylim(7700,37000)
 #show the plot
