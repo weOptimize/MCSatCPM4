@@ -67,7 +67,7 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 300 #was 300 #was 500
+iterations = 300 #0was 300 #was 500
 iterations_finalMCS = 1000 #was 5k
 iterations_postpro = 100
 
@@ -575,7 +575,7 @@ for i in range(len(bp['medians'])):
     median_val = np.median(y)
     # This line places a label (the median value) at the x location of the median line segment,
     # and at the y location of the median value
-    ax.text(x[0] + 0.55, median_val - 0.00 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
+    ax.text(x[0] + 0.35, median_val - 0.00 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
 
 plt.title("Comparison between NON correlated candidate projects (NC) and correlated candidate projects (YC)")
 

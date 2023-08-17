@@ -23,7 +23,8 @@ initcandidates = 20
 nr_confidence_policies = 1
 mcs_costs = []
 mcs_PV = []
-maxbdgt = 3800
+maxbdgt = 10800
+min_pf_conf = 0.90
 #initialize matrices to store bdgt and npv
 bdgtperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
 PVperproject_matrix = np.zeros((initcandidates, nr_confidence_policies))
@@ -519,16 +520,20 @@ def simulatescenario0(df10r, portfolio_projection, projectselection, iter, corre
 
     # create a dataframe with the results
     finalsol_df = pd.DataFrame({'Portfolio': projectselection, 'Portfolio PV': PV_results, 'Portfolio Budget': budgets, 'Portfolio confidence': pf_conf2})
+    # store in discarded_df all the rows that have a Portfolio confidence lower than min_pf_conf
+    discarded_df = finalsol_df[finalsol_df['Portfolio confidence'] < min_pf_conf]
+    # eliminate from the dataframe all the rows that have a Portfolio confidence lower than min_pf_conf
+    finalsol_df = finalsol_df[finalsol_df['Portfolio confidence'] >= min_pf_conf]
     # order the dataframe by the portfolio PV, starting with the highest PV
     finalsol_df = finalsol_df.sort_values(by=['Portfolio PV'], ascending=False)
     print ("Final Solution: ", finalsol_df)
+    print ("Discarded Portfolios due to confidence lower than specified:", discarded_df)
 
     PV_results = []
     budgets = []
     pf_cost20r = []
     #pf_conf2 = []
 
-    #from the sorted dataframe, take the first row, which corresponds to the highest PV portfolio and extract the data needed for the following pictures
     finalsol_df = finalsol_df.iloc[0]
     best_stoch_pf = finalsol_df[0]
     PV_results_escalar = finalsol_df[1]
@@ -674,6 +679,7 @@ def simulatescenario(df10r, portfolio_projection, projectselection, iter, correl
     pf_cost20r = []
     #pf_conf2 = []
 
+    finalsol_df = finalsol_df.iloc[0]
     #from the sorted dataframe, take the first row, which corresponds to the highest PV portfolio and extract the data needed for the following pictures
     finalsol_df = finalsol_df.iloc[0]
     best_stoch_pf = finalsol_df[0]
