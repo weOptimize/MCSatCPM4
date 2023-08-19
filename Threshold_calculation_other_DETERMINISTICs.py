@@ -89,7 +89,13 @@ def deterministic_with_reserves(df10r):
     # Print the results
     print("Optimal solution with reserves:")
     print(p.solution.get_values())
-    print("Optimal NPV with reserves: %.2f" % p.solution.get_objective_value())
+    print("Optimal PV with reserves: %.2f" % p.solution.get_objective_value())
+
+    # calculate the PV of the optimal solution with reserves
+    upper_threshold_PV = p.solution.get_objective_value()
+
+    # calculate the cost associated to the optimal solution with reserves
+    upper_threshold_cost = np.dot(bdgtperproject_matrix_with_reserv, p.solution.get_values())
 
     # assign the result from projectselection to the variable solutions
     solutions_with_reserv.append(p.solution.get_values())
@@ -137,7 +143,8 @@ def deterministic_with_reserves(df10r):
                                 
         # add the constraint(s)    
         p.linear_constraints.add(lin_expr=[cplex.SparsePair(ind=names, val=bdgtperproject_matrix)],
-                                senses="L", rhs=[maxbdgt-2500])
+                                #senses="L", rhs=[maxbdgt-2500]) # use this for YC version
+                                senses="L", rhs=[maxbdgt-2150])
         
         # Set the objective to maximize NPV  
         p.objective.set_sense(p.objective.sense.maximize)
@@ -153,9 +160,9 @@ def deterministic_with_reserves(df10r):
     p.solve()
 
     # Print the results
-    print("Optimal solution 2k shift:")
+    print("Optimal solution 2.15k shift:")
     print(p.solution.get_values())
-    print("Optimal NPV 2k shift: %.2f" % p.solution.get_objective_value())
+    print("Optimal PV 2.15k shift: %.2f" % p.solution.get_objective_value())
 
     # assign the result from projectselection to the variable solutions
     solutions.append(p.solution.get_values())
@@ -165,6 +172,6 @@ def deterministic_with_reserves(df10r):
 
     # convert deterministic_portfolio array into a binary array
     # deterministic_portfolio = deterministic_portfolio.astype(int)
-    print("deterministic_portfolio 2k shift: ", deterministic_portfolio_2kshift)
+    print("deterministic_portfolio 2.15k shift: ", deterministic_portfolio_2kshift)
 
-    return(deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift)
+    return(deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift, upper_threshold_PV, upper_threshold_cost)

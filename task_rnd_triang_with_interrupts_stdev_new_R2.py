@@ -289,7 +289,7 @@ def MCS_CPM_PF(mydata, iterations):
 		totalcalls = sum(callsperday)
 		rng = np.random.default_rng()
 		callarray = rng.uniform(0.02, 0.06, totalcalls)
-		duratplus = round(durat + sum(callarray),2)
+		duratplus = round(durat + 0) #sum(callarray),2)
 		durationsplus.append(duratplus)
 		durations.append(durat)
 

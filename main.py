@@ -23,7 +23,6 @@ from functions_for_simheuristic_v12 import *
 # import Threshold_calculation_vs05
 import Threshold_calculation_other_DETERMINISTICs
 
-
 # create an empty list to store the timestamps and labels
 timestamps = []
 
@@ -69,7 +68,7 @@ correlation_matrix = []
 nrcandidates = 20
 iterations = 300 #0was 300 #was 500
 iterations_finalMCS = 1000 #was 5k
-iterations_postpro = 100
+iterations_postpro = 1000
 
 #iterations = 30
 #iterations_finalMCS = 50
@@ -180,8 +179,8 @@ def evaluate(individual, bdgtperproject, PVperproject, maxbdgt):
 # Define the genetic algorithm parameters
 POPULATION_SIZE = 180 #was 100 #was 50 #was 180/30
 #POPULATION_SIZE = 40
-P_CROSSOVER = 0.4
-P_MUTATION = 0.6
+P_CROSSOVER = 0.6
+P_MUTATION = 0.1
 MAX_GENERATIONS = 300 #was 500 #was 200 #was 100 #was 300 
 #MAX_GENERATIONS = 100
 HALL_OF_FAME_SIZE = 5
@@ -208,7 +207,7 @@ toolbox.register("mate", tools.cxTwoPoint)
 # indpb is the independent probability for each gene to be flipped and P_MUTATION is the probability of mutating an individual
 # The difference between P_MUTATION and indpb is that P_MUTATION determines whether an individual will be mutated or not,
 # while indpb determines how much an individual will be mutated if it is selected for mutation.
-toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
+toolbox.register("mutate", tools.mutFlipBit, indpb=0.2)
 # operator for selecting individuals for breeding the next
 # generation: each individual of the current generation
 # is replaced by the 'fittest' (best) of three individuals
@@ -325,6 +324,9 @@ best_stoch_pf_NC, mcs_results2, widened_df20r2 = simulatescenario0(df10r_NC, por
 timestamps.append(('Postprocessing non-correlated (NC) version', time.time()))
 
 # *********** Optimize and refine (2nd stage) the correlated version ************
+# ************************************************************** ONLY FOR DEBUGGING - DELETE LATER
+iterations = 10 #0was 300 #was 500 ***********************
+
 
 df10r = correlatedMCS(mcs_results1, iterations, nrcandidates, initial_projection_indexes) #from138
 
@@ -412,7 +414,7 @@ print("Total execution time: %s seconds" %((time.time() - start_time)))
 # execute the code inside Threshold_calculation vs05.py to check the thresholds for
 # checking algorithm plausibility and extract the two deterministic portfolios obtained
 #deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold_calculation_other_DETERMINISTICs.deterministic_with_reserves(df10r, bestsol_size)
-deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift = Threshold_calculation_other_DETERMINISTICs.deterministic_with_reserves(df10r)
+deterministic_portfolio_with_reserv, deterministic_portfolio_2kshift, upper_threshold_PV, upper_threshold_cost= Threshold_calculation_other_DETERMINISTICs.deterministic_with_reserves(df10r)
 
 
 # I want to reuse code that analyzes a HoF, but now I want it to analyze only one solution, 
@@ -427,6 +429,7 @@ mcs_results4, widened_df20r4 = simulatescenario(df10r_NC, deterministic_portfoli
 projectselection = []
 projectselection.append(deterministic_portfolio_2kshift)# simulate the portfolio to obtain the MCS of PV and portfolio costs and then graph the results
 
+correlated = "NC"
 # simulatescenario(df10r, portfolio_projection, projectselection, iter):
 mcs_results5, widened_df20r5 = simulatescenario(df10r_NC, deterministic_portfolio_2kshift, projectselection, iterations_postpro, correlated)
 
@@ -560,13 +563,15 @@ for i in range(iterations_postpro):
 labels = ['PV(NC)', 'PV(YC)', 'PfCost(NC)', 'PfCost(YC)']
 data = [netPV_2, netPV_3, NC_pfCosts, correlated_pfCosts]
 
+plt.rcdefaults()
+
 #plt.figure(4)
 #fig, ax = plt.subplots()
 fig = plt.figure(4)
 ax = fig.subplots()
 
 # Create the boxplot
-bp = ax.boxplot(data, labels=labels, patch_artist=True, notch=True, vert=1)
+bp = ax.boxplot(data, labels=labels, patch_artist=False, notch=True, vert=1)
 
 for i in range(len(bp['medians'])):
     median = bp['medians'][i]
@@ -575,20 +580,63 @@ for i in range(len(bp['medians'])):
     median_val = np.median(y)
     # This line places a label (the median value) at the x location of the median line segment,
     # and at the y location of the median value
-    ax.text(x[0] + 0.35, median_val - 0.00 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
+    ax.text(x[0] + 0.5, median_val - 0.01 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
+
+# add dotted line crossing the second half of plot showing the budgetary limit maxbdgt
+plt.plot([2.5, 4.5], [maxbdgt, maxbdgt], color='grey', linestyle='--') 
 
 plt.title("Comparison between NON correlated candidate projects (NC) and correlated candidate projects (YC)")
 
-plt.figure(5)
-# plt.boxplot([pf_cost, pf_cost10r], labels=['Independent', 'Correlated'])
-plt.boxplot([netPV_2, netPV_4, netPV_5], labels=
-            ['PV', 'PV_Det-Stoch', 'PV_Deterministic -2.5k€', ]) #add ,vert=False if you want it horizontal
-plt.title("NC PV of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.5k€")
+empty = []
+labels = ['PV', 'PV_Det-Det', 'PV_Det-Stoch', 'PV_Deterministic -2.5k€']
+data = [netPV_2, empty, netPV_4, netPV_5]
 
-plt.figure(6)
-plt.boxplot([NC_pfCosts, pfCosts_4, pfCosts_5], labels=
-            ['Portfolio Costs', 'Portfolio Costs CR', 'Portf.Costs -2.5k€']) #add ,vert=False if you want it horizontal
-plt.title("NC COSTS of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.5k€")
+fig = plt.figure(5)
+ax = fig.subplots()
+
+bp = ax.boxplot(data, labels=labels, patch_artist=False, notch=True, vert=1)
+
+for i in range(len(bp['medians'])):
+    median = bp['medians'][i]
+    x, y = median.get_data()
+    # You can choose your own way to calculate the median value from the y data points.
+    median_val = np.median(y)
+    # This line places a label (the median value) at the x location of the median line segment,
+    # and at the y location of the median value
+    ax.text(x[0] + 0.11, median_val - 0.003 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
+
+# plot and label of deterministic value under deterministic conditions
+plt.plot([1.8, 2.2], [upper_threshold_PV, upper_threshold_PV], color='black', linestyle='-')  # adjust color, linestyle, and label as needed
+ax.text(2.0, upper_threshold_PV - 0.003 * upper_threshold_PV, f'{upper_threshold_PV:.0f}', horizontalalignment='center', color='black')
+plt.title("NC PV of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.15k€")
+
+
+empty = []
+labels = ['Portfolio Costs', 'PfCost_Det-Det', 'Portfolio Costs CR', 'Portf.Costs -2.15k€']
+data = [NC_pfCosts, empty, pfCosts_4, pfCosts_5]
+
+fig = plt.figure(6)
+ax = fig.subplots()
+
+bp = ax.boxplot(data, labels=labels, patch_artist=False, notch=True, vert=1)
+
+for i in range(len(bp['medians'])):
+    median = bp['medians'][i]
+    x, y = median.get_data()
+    # You can choose your own way to calculate the median value from the y data points.
+    median_val = np.median(y)
+    # This line places a label (the median value) at the x location of the median line segment,
+    # and at the y location of the median value
+    ax.text(x[0] + 0.11, median_val - 0.006 * median_val, f'{median_val:.0f}', horizontalalignment='center', color='black')
+
+
+# Line for single value
+plt.plot([1.8, 2.2], [upper_threshold_cost, upper_threshold_cost], color='black', linestyle='-')  # adjust color, linestyle, and label as needed
+ax.text(2.0, upper_threshold_cost - 0.006 * upper_threshold_cost, f'{upper_threshold_cost:.0f}', horizontalalignment='center', color='black')
+plt.title("NC COSTS of Optimal portf. vs. Deterministic pf. in stoch.env. vs. lowering Bdgt Limit -2.15k€")
+
+# add dotted line crossing the whole plot showing the budgetary limit 10800
+plt.plot([0, 4], [maxbdgt, maxbdgt], color='grey', linestyle='--')  
 
 #set y axis limits between 8000 and 20000
 #plt.ylim(7700,37000)
@@ -601,7 +649,7 @@ plt.show()
 print('Average PV: ', netPV_4.mean())
 # provide value of 90% confidence interval of correlated_pfCosts
 print('90% fulfilment confidence of portfolio costs (Det/Conting.Reserves): ', np.percentile(pfCosts_4, [0, 90]))
-print('90% fulfilment confidence of portfolio costs (Det/ -2.5 kEur): ', np.percentile(pfCosts_5, [0, 90]))
+print('90% fulfilment confidence of portfolio costs (Det/ -2.15 kEur): ', np.percentile(pfCosts_5, [0, 90]))
 # estimate the confidence value that corresponds to pfCosts = 10800
 sorted_arr = np.sort(pfCosts_4)
 index = np.searchsorted(sorted_arr, 10800)
@@ -612,13 +660,13 @@ fig, ax = plt.subplots()
 # title of the plot
 ax.set_title('Monte Carlo Simulation of a candidate project')
 # Plot the histogram of the monte carlo simulation of the fourth project
-ax.hist(mcs_results2[0][3], bins=200, color='grey', label='Histogram')
+ax.hist(mcs_results2[0][3], bins=100, color='grey', label='Histogram')
 # title of the x axis
 ax.set_xlabel('Cost in k€')
 # Create a twin Axes object that shares the x-axis of the original Axes object
 ax2 = ax.twinx()
 # Plot the histogram of the monte carlo simulation of the first project in the form of a cumulative distribution function
-ax2.hist(mcs_results2[0][3], bins=200, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
+ax2.hist(mcs_results2[0][3], bins=100, color='black', cumulative=True, histtype='step', density=True, label='Cumulative Distribution')
 # Set the y-axis of the twin Axes object to be visible
 ax2.yaxis.set_visible(True)
 #set maximum value of the y axis of the twin Axes object to 1

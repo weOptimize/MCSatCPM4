@@ -174,15 +174,6 @@ def slack(mydata):
 	
 	return mydata
 	
-#simulate arrival of customers in a queue
-def simulatearrivals(average, periods):
-	arrivals = []
-	rng = np.random.default_rng()
-	sa = rng.poisson(average, periods)
-	#print(sa)
-	#count, bins, ignored = plt.hist(sa, average*3, density=True)
-	#plt.show()
-	return(sa)
 
 def computeCPM(mydata):
 	#create simdays column:
@@ -348,7 +339,7 @@ def MCS_CPM_PF(mydata, iterations):
 		# rng = np.random.default_rng()
 		# callarray = rng.uniform(0.02, 0.06, totalcalls)
 		totalextratime = totalcalls * 0.04
-		duratplus = round(durat + totalextratime)
+		duratplus = round(durat + 0) # totalextratime)
 		durationsplus.append(duratplus)
 		durations.append(durat)
 

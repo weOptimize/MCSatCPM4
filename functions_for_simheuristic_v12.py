@@ -237,6 +237,7 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
         #heatmap of the correlation matrix cm10r
         sns.set(font_scale=1.15)
         sns.heatmap(cm10r, annot=True, cmap="Greys")
+        
 
     #initialize dataframe df10r with size nrcandidates x iterations  
     df10r = pd.DataFrame(np.zeros((iterat, nrcandidates)))  
