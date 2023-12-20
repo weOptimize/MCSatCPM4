@@ -51,8 +51,8 @@ correlation_matrix = []
 
 #I define the number of candidates to be considered and the number of iterations for the MCS
 nrcandidates = 20
-iterations = 5000
-iterations_finalMCS = 50000
+iterations = 500
+iterations_finalMCS = 5000
 
 #I define the budget constraint (in k€) and the minimum confidence level for the portfolio
 maxbdgt = 10800
@@ -132,10 +132,12 @@ def evaluate(individual, bdgtperproject, npvperproject, maxbdgt):
     return total_npv, portfolio_confidence
 
 # Define the genetic algorithm parameters
-POPULATION_SIZE = 500 #was 180 #was 100 #was 50
+# POPULATION_SIZE = 500 #was 180 #was 100 #was 50
+POPULATION_SIZE = 180
 P_CROSSOVER = 0.4
 P_MUTATION = 0.6
-MAX_GENERATIONS = 2000 #was 500 #was 200 #was 100
+# MAX_GENERATIONS = 2000 #was 500 #was 200 #was 100
+MAX_GENERATIONS = 300
 HALL_OF_FAME_SIZE = 5
 
 # Create the individual and population classes based on the list of attributes and the fitness function # was weights=(1.0,) returning only one var at fitness function

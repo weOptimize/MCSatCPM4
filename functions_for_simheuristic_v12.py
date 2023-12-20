@@ -277,6 +277,130 @@ def correlatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):
     correlation_matrix1 = df10r.corr()  
     return df10r  
 
+def correlatedMCS2(mcs_results, iterat, nrcandidates, projection_indexes, corr_matrix):  
+    #check the parameters of beta distribution for each of the mcs_results  
+    betaparams = []  
+    for i in range(nrcandidates):  
+        f = Fitter(mcs_results[0][i], distributions=['beta'])
+        f.fit(progress=False)
+        betaparam=(f.fitted_param["beta"])  
+        betaparams.append(betaparam)  
+  
+    #extract all "a" parameters from the betaparams array  
+    a = []  
+    for i in range(nrcandidates):  
+        a.append(betaparams[i][0])  
+  
+    #extract all "b" parameters from the betaparams array  
+    b = []  
+    for i in range(nrcandidates):  
+        b.append(betaparams[i][1])  
+  
+    #extract all "loc" parameters from the betaparams array  
+    loc = []  
+    for i in range(nrcandidates):  
+        loc.append(betaparams[i][2])  
+  
+    #extract all "scale" parameters from the betaparams array  
+    scale = []  
+    for i in range(nrcandidates):  
+        scale.append(betaparams[i][3])  
+  
+    # print("betaparams: ")
+    # print(betaparams)  
+  
+    # copy the array with all MCS results  
+    df0 = pd.DataFrame(data=mcs_results[0]).T  
+    col_names = ["P{:02d}".format(i+1) for i in range(nrcandidates)]  
+    df0.rename(columns=dict(enumerate(col_names)), inplace=True)  
+    correlation_matrix0 = df0.corr()
+  
+#     # *********Correlation matrix with random values between 0 and 1, but positive semidefinite***************  
+#     # Set the seed value for the random number generator    
+#     seed_value = 1005    
+#     np.random.seed(seed_value)  
+#     # Generate a random symmetric matrix  
+#     A = np.random.rand(initcandidates, initcandidates)  
+#     A = (A + A.T) / 2  
+#     # Compute the eigenvalues and eigenvectors of the matrix  
+#     eigenvalues, eigenvectors = np.linalg.eigh(A)  
+#     # Ensure the eigenvalues are positive  
+#     eigenvalues = np.abs(eigenvalues)  
+#     # Normalize the eigenvalues so that their sum is equal to nrcandidates  
+#     eigenvalues = eigenvalues / eigenvalues.sum() * initcandidates  
+#     # Compute the covariance matrix. Forcing positive values, as long as negative correlations are not usual in reality of projects  
+#     cm10r = np.abs(eigenvectors.dot(np.diag(eigenvalues)).dot(eigenvectors.T))  
+#     # Ensure the diagonals are equal to 1  
+#     for i in range(initcandidates):  
+#         cm10r[i, i] = 1  
+#     # print('cm10r BEFORE:')
+#    #  print(cm10r)
+        
+    cm10r = corr_matrix
+    
+    # if the sum of the values inside projection_indexes is the same as the number of candidates, then we do not change the correlation matrix
+    if len(projection_indexes) == initcandidates:
+        cm10r = cm10r
+    # if the sum of the values inside projection_indexes is not the same as the number of candidates, then we change the correlation matrix
+    else:
+        # we change the correlation matrix by setting the correlation between the candidates that are not selected to 0
+        # for each time we find a zero, we trim the whole column adn row of the correlation matrix corresponding to that candidate
+        i = 0
+        j = 0
+        for i in range(initcandidates):
+            if i not in projection_indexes:
+                cm10r = np.delete(cm10r, i-j, 0)
+                cm10r = np.delete(cm10r, i-j, 1)
+                j+=1
+    # print('cm10r AFTER:')
+    # print(cm10r)
+
+    if cm10r.shape[0] == initcandidates:
+        #make sure no legend appears in the next plot
+        plt.figure(12)
+        #plt.legend().set_visible(False)
+        #heatmap of the correlation matrix cm10r
+        sns.set(font_scale=1.15)
+        sns.heatmap(cm10r, annot=True, cmap="Greys")
+
+    #initialize dataframe df10r with size nrcandidates x iterations  
+    df10r = pd.DataFrame(np.zeros((iterat, nrcandidates)))  
+    # step 1: draw random variates from a multivariate normal distribution   
+    # with the targeted correlation structure  
+    r0 = [0] * cm10r.shape[0]                       # create vector r with as many zeros as correlation matrix has variables (row or columns)  
+    mv_norm = multivariate_normal(mean=r0, cov=cm10r)    # means = vector of zeros; cov = targeted corr matrix  
+    rand_Nmv = mv_norm.rvs(iterat)                               # draw N random variates  
+    # step 2: convert the r * N multivariate variates to scores   
+    rand_U = norm.cdf(rand_Nmv)   # use its cdf to generate N scores (probabilities between 0 and 1) from the multinormal random variates  
+    # step 3: instantiate the nrcandidates marginal distributions   
+    d_list = []  
+    for i in range(nrcandidates):  
+        d = beta(a[i], b[i], loc[i], scale[i])  
+        d_list.append(d)  
+    # draw N random variates for each of the nrcandidates marginal distributions  
+    # WITHOUT applying a copula
+    # do it only for the ones different from 0  
+    rand_list = [d.rvs(iterat) for d in d_list]  
+    # rand_list = [d.rvs(iterat) for i, d in enumerate(d_list) if i not in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]  
+    # initial correlation structure before applying a copula  
+    c_before = np.corrcoef(rand_list)  
+    # step 4: draw N random variates for each of the nrcandidates marginal distributions  
+    # and use as inputs the correlated uniform scores we have generated in step 2  
+    rand_list = [d.ppf(rand_U[:, i]) for i, d in enumerate(d_list)]  
+    # final correlation structure after applying a copula  
+    c_after = np.corrcoef(rand_list)  
+    #print("Correlation matrix before applying a copula:")  
+    #print(c_before)  
+    #print("Correlation matrix after applying a copula:")  
+    #print(c_after)  
+    # step 5: store the N random variates in the dataframe  
+    for i in range(nrcandidates):  
+        df10r[i] = rand_list[i]  
+    col_names = ["P{:02d}".format(i+1) for i in range(nrcandidates)]  
+    df10r.rename(columns=dict(enumerate(col_names)), inplace=True)  
+    correlation_matrix1 = df10r.corr()  
+    return df10r  
+
 def NONcorrelatedMCS(mcs_results, iterat, nrcandidates, projection_indexes):  
     # pass non-correlated MCS results to dataframe  
     df0 = pd.DataFrame(data=mcs_results[0]).T  
